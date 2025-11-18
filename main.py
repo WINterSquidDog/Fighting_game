@@ -39,11 +39,13 @@ def main():
     # Core systems с настройками
     resources = ResourceManager()
     input_handler = InputHandler()
+    save_manager = SaveManager()
 
     # Game manager с настройками
     gm = GameManager(resources, input_handler)
     gm.settings = settings_manager
     gm.screen = screen
+    gm.save_manager = save_manager
     # Регистрируем сцены
     gm.register_scene("loading", LoadingScene(gm))
     gm.register_scene("menu", MenuScene(gm))

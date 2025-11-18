@@ -2,10 +2,15 @@
 import pygame
 import os
 from src.managers.game_manager import BaseScene
+from src.managers.save_manager import SaveManager
 
 class MenuScene(BaseScene):
     def __init__(self, gm):
         super().__init__(gm)
+        
+        # Добавляем менеджер сохранений
+        self.save_manager = SaveManager()
+        self.save_manager.load_save()
         
         # Цветовая схема
         self.colors = {
@@ -21,10 +26,10 @@ class MenuScene(BaseScene):
             "selected": (100, 255, 100)
         }
         
-        # Данные игрока
+        # Данные игрока из сохранения
         self.player_data = {
-            "coins": 1250,
-            "trophies": 1850
+            "coins": self.save_manager.get_coins(),
+            "trophies": self.save_manager.get_trophies()
         }
         
         # Персонажи с карточками
@@ -35,21 +40,24 @@ class MenuScene(BaseScene):
                 "card_normal": None,
                 "card_special": None,
                 "description": "",
-                "selected": False
+                "selected": False,
+                "skin": "default"
             },
             {
                 "name": "Chara", 
                 "card_normal": None,
                 "card_special": None,
                 "description": "",
-                "selected": False
+                "selected": False,
+                "skin": "default"
             },
             {
                 "name": "Steve",
                 "card_normal": None,
                 "card_special": None,
                 "description": "",
-                "selected": False
+                "selected": False,
+                "skin": "default"
             }
         ]
         
@@ -61,21 +69,24 @@ class MenuScene(BaseScene):
                 "card_normal": None,
                 "card_special": None,
                 "description": "",
-                "selected": False
+                "selected": False,
+                "skin": "default"
             },
             {
                 "name": "Papyrus",
                 "card_normal": None,
                 "card_special": None,
                 "description": "",
-                "selected": False
+                "selected": False,
+                "skin": "default"
             },
             {
                 "name": "Larry",
                 "card_normal": None,
                 "card_special": None,
                 "description": "",
-                "selected": False
+                "selected": False,
+                "skin": "default"
             }
         ]
         
@@ -94,7 +105,7 @@ class MenuScene(BaseScene):
         self.exit_button = None
         
         # Состояние выбора
-        self.current_section = 0  # 0=FIGHT, 1=CHARACTERS, 2=CAMEOS, 3=SHOP, 4=SETTINGS, 5=EXIT
+        self.current_section = 0
         self.selecting_mode = False
         self.selection_confirmed_time = 0
         self.show_selection_confirmed = False
@@ -104,21 +115,88 @@ class MenuScene(BaseScene):
         self.music_started = False
         
     def on_enter(self):
-        """Загружаем карточки при входе в сцену"""
+        """Загружаем карточки и восстанавливаем последний выбор"""
         self._load_all_cards()
         self._play_background_music()
+        self._restore_last_selection()
+
+    def _restore_last_selection(self):
+        """Восстанавливает последний выбор персонажей из сохранения"""
+        last_char = self.save_manager.get_last_character()
+        last_cameo = self.save_manager.get_last_cameo()
+        
+        # Находим индексы последних выбранных персонажей
+        for i, char in enumerate(self.characters):
+            if char["name"] == last_char:
+                self.selected_character = i
+                char["selected"] = True
+                char["skin"] = self.save_manager.get_character_skin()
+                print(f"✅ Восстановлен персонаж: {char['name']}")
+                break
+        
+        for i, cameo in enumerate(self.cameos):
+            if cameo["name"] == last_cameo:
+                self.selected_cameo = i
+                cameo["selected"] = True
+                cameo["skin"] = self.save_manager.get_cameo_skin()
+                print(f"✅ Восстановлено камео: {cameo['name']}")
+                break
     
+    def _select_character(self):
+        """Выбор персонажа с сохранением"""
+        for char in self.characters:
+            char["selected"] = False
+        self.characters[self.selected_character]["selected"] = True
+        
+        # Сохраняем выбор
+        selected_char = self.characters[self.selected_character]
+        self.save_manager.save_game(
+            character=selected_char["name"],
+            character_skin=selected_char["skin"]
+        )
+        
+        print(f"✅ Выбран персонаж: {selected_char['name']}")
+        self._show_selection_confirmed()
+    
+    def _select_cameo(self):
+        """Выбор камео с сохранением"""
+        for cameo in self.cameos:
+            cameo["selected"] = False
+        self.cameos[self.selected_cameo]["selected"] = True
+        
+        # Сохраняем выбор
+        selected_cameo = self.cameos[self.selected_cameo]
+        self.save_manager.save_game(
+            cameo=selected_cameo["name"],
+            cameo_skin=selected_cameo["skin"]
+        )
+        
+        print(f"✅ Выбрано камео: {selected_cameo['name']}")
+        self._show_selection_confirmed()
+
     def _load_all_cards(self):
-        """Загружаем все карточки с правильным масштабированием"""
+        """Загружаем все карточки с учетом скинов"""
         card_size = self._get_card_size()
         
         for character in self.characters:
-            character["card_normal"] = self._load_card_image(f"{character['name'].lower()}_normal.jpg", False, card_size)
-            character["card_special"] = self._load_card_image(f"{character['name'].lower()}_special.jpg", True, card_size)
+            # Загружаем карточки с учетом скина
+            skin = character["skin"]
+            character["card_normal"] = self._load_card_image(
+                f"{character['name'].lower()}_{skin}_normal.jpg", False, card_size
+            )
+            character["card_special"] = self._load_card_image(
+                f"{character['name'].lower()}_{skin}_special.jpg", True, card_size
+            )
             
         for cameo in self.cameos:
-            cameo["card_normal"] = self._load_card_image(f"{cameo['name'].lower()}_normal.jpg", False, card_size)
-            cameo["card_special"] = self._load_card_image(f"{cameo['name'].lower()}_special.jpg", True, card_size)
+            # Загружаем карточки с учетом скина
+            skin = cameo["skin"]
+            cameo["card_normal"] = self._load_card_image(
+                f"{cameo['name'].lower()}_{skin}_normal.jpg", False, card_size
+            )
+            cameo["card_special"] = self._load_card_image(
+                f"{cameo['name'].lower()}_{skin}_special.jpg", True, card_size
+            )
     
     def _get_card_size(self):
         """Определяем размер карточки в зависимости от разрешения"""
@@ -442,10 +520,10 @@ class MenuScene(BaseScene):
         """Отрисовка вертикальных вкладок меню слева и справа, центрированных по Y - увеличенные"""
         self.tab_buttons = []
         
-        # Увеличиваем размеры кнопок
-        tab_width = self.s(160)  # Было 140
-        tab_height = self.s(50)  # Было 40
-        tab_spacing = self.s(12)  # Было 8
+        # ⚡ УВЕЛИЧИЛ РАЗМЕРЫ КНОПОК
+        tab_width = self.s(180)  # Было 160 -> 180
+        tab_height = self.s(55)  # Было 50 -> 55
+        tab_spacing = self.s(15)  # Было 12 -> 15
         
         # Левая группа: FIGHT, CHARACTERS, CAMEOS
         left_tabs = self.sections[:3]
@@ -460,19 +538,19 @@ class MenuScene(BaseScene):
         right_start_y = (screen.get_height() - right_total_height) // 2
         
         # Левые вкладки
-        left_x = self.s(30)  # Немного отступ увеличил
+        left_x = self.s(30)
         for i, section in enumerate(left_tabs):
             tab_rect = pygame.Rect(left_x, left_start_y + i * (tab_height + tab_spacing), tab_width, tab_height)
             self.tab_buttons.append(tab_rect)
             
             color = self.colors["button_primary"] if i == self.current_section else self.colors["header_bg"]
             
-            pygame.draw.rect(screen, color, tab_rect, border_radius=self.s(10))  # Увеличил радиус
-            pygame.draw.rect(screen, self.colors["text_light"], tab_rect, self.s(2), border_radius=self.s(10))
+            pygame.draw.rect(screen, color, tab_rect, border_radius=self.s(12))  # Увеличил радиус
+            pygame.draw.rect(screen, self.colors["text_light"], tab_rect, self.s(2), border_radius=self.s(12))
             
-            # Увеличил шрифт
-            max_font_size = self.f(16)  # Было 14
-            min_font_size = self.f(11)  # Было 10
+            # ⚡ УВЕЛИЧИЛ ШРИФТ
+            max_font_size = self.f(18)  # Было 16 -> 18
+            min_font_size = self.f(12)  # Было 11 -> 12
             font_size = max_font_size
             
             while font_size >= min_font_size:
@@ -490,7 +568,7 @@ class MenuScene(BaseScene):
                                    tab_rect.centery - final_text.get_height() // 2))
         
         # Правые вкладки
-        right_x = screen.get_width() - tab_width - self.s(30)  # Немного отступ увеличил
+        right_x = screen.get_width() - tab_width - self.s(30)
         for i, section in enumerate(right_tabs):
             tab_index = i + 3  # Индекс в общем списке
             tab_rect = pygame.Rect(right_x, right_start_y + i * (tab_height + tab_spacing), tab_width, tab_height)
@@ -501,12 +579,12 @@ class MenuScene(BaseScene):
             else:
                 color = self.colors["button_secondary"] if tab_index == self.current_section else self.colors["header_bg"]
             
-            pygame.draw.rect(screen, color, tab_rect, border_radius=self.s(10))  # Увеличил радиус
-            pygame.draw.rect(screen, self.colors["text_light"], tab_rect, self.s(2), border_radius=self.s(10))
+            pygame.draw.rect(screen, color, tab_rect, border_radius=self.s(12))  # Увеличил радиус
+            pygame.draw.rect(screen, self.colors["text_light"], tab_rect, self.s(2), border_radius=self.s(12))
             
-            # Увеличил шрифт
-            max_font_size = self.f(16)  # Было 14
-            min_font_size = self.f(11)  # Было 10
+            # ⚡ УВЕЛИЧИЛ ШРИФТ
+            max_font_size = self.f(18)  # Было 16 -> 18
+            min_font_size = self.f(12)  # Было 11 -> 12
             font_size = max_font_size
             
             while font_size >= min_font_size:
@@ -522,54 +600,57 @@ class MenuScene(BaseScene):
             
             screen.blit(final_text, (tab_rect.centerx - final_text.get_width() // 2, 
                                    tab_rect.centery - final_text.get_height() // 2))
-    
+
     def _draw_fight_section(self, screen, rect):
         """Секция FIGHT - основной экран"""
         # Показываем выбранные персонаж и камео
         selected_char = next((char for char in self.characters if char["selected"]), None)
         selected_cameo = next((cameo for cameo in self.cameos if cameo["selected"]), None)
         
-        card_size = self._get_card_size()
+        # 🎨 ДОБАВЛЯЕМ АРТЫ ПО ЦЕНТРУ (перекрывающиеся)
+        art_size = self.s(350)  # Размер артов - МЕНЯЙТЕ ЗДЕСЬ
         
-        # Карточка персонажа
+        # Арт персонажа (слева, немного перекрывает камео)
         if selected_char:
-            char_card = selected_char["card_special"]
-            if char_card:
-                char_x = rect.centerx - card_size - self.s(50)
-                char_y = rect.centery - card_size//2
-                screen.blit(char_card, (char_x, char_y))
+            char_art = self._load_art_image(f"{selected_char['name'].lower()}.png", art_size)
+            if char_art:
+                # 🎨 КООРДИНАТЫ ПЕРСОНАЖА - МЕНЯЙТЕ ЗДЕСЬ
+                char_x = rect.centerx - art_size + self.s(40)  # Сдвиг влево от центра
+                char_y = rect.centery - art_size // 2  # Центр по вертикали
+                screen.blit(char_art, (char_x, char_y))
         
-        # Карточка камео
+        # Арт камео (справа, перекрывает персонажа)
         if selected_cameo:
-            cameo_card = selected_cameo["card_special"]
-            if cameo_card:
-                cameo_x = rect.centerx + self.s(50)
-                cameo_y = rect.centery - card_size//2
-                screen.blit(cameo_card, (cameo_x, cameo_y))
-        
-        # УДАЛЕНА надпись Battle Modes и комбинация not selected + not selected
+            cameo_art = self._load_art_image(f"{selected_cameo['name'].lower()}.png", art_size)
+            if cameo_art:
+                # 🎨 КООРДИНАТЫ КАМЕО - МЕНЯЙТЕ ЗДЕСЬ
+                cameo_x = rect.centerx - self.s(40)  # Сдвиг вправо от центра
+                cameo_y = rect.centery - art_size // 2  # Центр по вертикали
+                screen.blit(cameo_art, (cameo_x, cameo_y))
         
         # Кнопка выбора режима (нерабочая) - внизу по центру
-        mode_btn_width = self.s(200)
-        mode_btn_height = self.s(50)
+        # ⚡ УВЕЛИЧИЛ КНОПКУ РЕЖИМА
+        mode_btn_width = self.s(220)  # Было 200 -> 220
+        mode_btn_height = self.s(60)  # Было 50 -> 60
         self.mode_button = pygame.Rect(
-            rect.centerx - mode_btn_width // 2,  # Центрируем по X
-            rect.bottom - mode_btn_height - self.s(30),  # Оставляем по Y внизу
+            rect.centerx - mode_btn_width // 2,
+            rect.bottom - mode_btn_height - self.s(30),
             mode_btn_width,
             mode_btn_height
         )
         
-        pygame.draw.rect(screen, self.colors["button_secondary"], self.mode_button, border_radius=self.s(10))
-        pygame.draw.rect(screen, self.colors["text_light"], self.mode_button, self.s(2), border_radius=self.s(10))
+        pygame.draw.rect(screen, self.colors["button_secondary"], self.mode_button, border_radius=self.s(12))
+        pygame.draw.rect(screen, self.colors["text_light"], self.mode_button, self.s(2), border_radius=self.s(12))
         
-        mode_font = self.get_font(18, bold=True)
+        mode_font = self.get_font(20, bold=True)  # Увеличил шрифт
         mode_text = mode_font.render("VS BOT", True, self.colors["text_light"])
         screen.blit(mode_text, (self.mode_button.centerx - mode_text.get_width() // 2,
                               self.mode_button.centery - mode_text.get_height() // 2))
         
         # Кнопка начала боя - внизу справа
-        btn_width = self.s(180)
-        btn_height = self.s(50)
+        # ⚡ УВЕЛИЧИЛ КНОПКУ FIGHT
+        btn_width = self.s(200)  # Было 180 -> 200
+        btn_height = self.s(60)  # Было 50 -> 60
         self.battle_button = pygame.Rect(
             rect.right - btn_width - self.s(50),
             rect.bottom - btn_height - self.s(30),
@@ -579,17 +660,56 @@ class MenuScene(BaseScene):
         battle_enabled = selected_char and selected_cameo
         
         if battle_enabled:
-            pygame.draw.rect(screen, self.colors["button_primary"], self.battle_button, border_radius=self.s(10))
-            pygame.draw.rect(screen, self.colors["accent"], self.battle_button, self.s(3), border_radius=self.s(10))
+            pygame.draw.rect(screen, self.colors["button_primary"], self.battle_button, border_radius=self.s(12))
+            pygame.draw.rect(screen, self.colors["accent"], self.battle_button, self.s(3), border_radius=self.s(12))
         else:
-            pygame.draw.rect(screen, (100, 100, 100), self.battle_button, border_radius=self.s(10))
-            pygame.draw.rect(screen, (150, 150, 150), self.battle_button, self.s(3), border_radius=self.s(10))
+            pygame.draw.rect(screen, (100, 100, 100), self.battle_button, border_radius=self.s(12))
+            pygame.draw.rect(screen, (150, 150, 150), self.battle_button, self.s(3), border_radius=self.s(12))
         
-        btn_font = self.get_font(20, bold=True)
+        btn_font = self.get_font(22, bold=True)  # Увеличил шрифт
         btn_text = btn_font.render("FIGHT!", True, 
                                  self.colors["text_light"] if battle_enabled else self.colors["text_dark"])
         screen.blit(btn_text, (self.battle_button.centerx - btn_text.get_width() // 2,
                              self.battle_button.centery - btn_text.get_height() // 2))
+
+    def _load_art_image(self, filename, art_size):
+        """Загрузка арта с указанным размером"""
+        art_path = os.path.join("Sprites", "arts", filename)
+        
+        try:
+            if os.path.exists(art_path):
+                art = pygame.image.load(art_path).convert_alpha()
+                # Масштабируем сохраняя пропорции
+                original_width, original_height = art.get_size()
+                scale_factor = min(art_size / original_width, art_size / original_height)
+                new_width = int(original_width * scale_factor)
+                new_height = int(original_height * scale_factor)
+                art = pygame.transform.scale(art, (new_width, new_height))
+                return art
+            else:
+                print(f"⚠️ Арт не найден: {art_path}")
+                return self._create_placeholder_art(filename, art_size)
+        except Exception as e:
+            print(f"❌ Ошибка загрузки арта {art_path}: {e}")
+            return self._create_placeholder_art(filename, art_size)
+
+    def _create_placeholder_art(self, filename, art_size):
+        """Создание заглушки для арта"""
+        art = pygame.Surface((art_size, art_size), pygame.SRCALPHA)
+        art.fill((80, 80, 150, 255))
+        
+        border = max(3, art_size // 40)
+        pygame.draw.rect(art, (255, 255, 255), (border, border, art_size-2*border, art_size-2*border), border)
+        
+        placeholder_font = pygame.font.SysFont("arial", max(20, art_size//15), bold=True)
+        placeholder_text = placeholder_font.render("АРТ", True, (255, 255, 255))
+        art.blit(placeholder_text, (art_size//2 - placeholder_text.get_width()//2, art_size//3))
+        
+        name_font = pygame.font.SysFont("arial", max(14, art_size//20))
+        name_text = name_font.render(filename, True, (200, 200, 200))
+        art.blit(name_text, (art_size//2 - name_text.get_width()//2, art_size//2))
+        
+        return art
     
     def _draw_characters_section(self, screen, rect):
         """Секция выбора персонажей"""
