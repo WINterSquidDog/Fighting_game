@@ -49,8 +49,10 @@ class SaveManager:
         try:
             if character:
                 self.data["last_character"] = character
+                print(f"💾 Сохраняем персонажа: {character}")
             if cameo:
                 self.data["last_cameo"] = cameo
+                print(f"💾 Сохраняем камео: {cameo}")
             if character_skin:
                 self.data["character_skin"] = character_skin
             if cameo_skin:
@@ -58,7 +60,7 @@ class SaveManager:
             
             with open(self.save_file, 'w', encoding='utf-8') as f:
                 json.dump(self.data, f, ensure_ascii=False, indent=2)
-            print("💾 Прогресс сохранен")
+            print("💾 Весь прогресс сохранен")
         except Exception as e:
             print(f"❌ Ошибка сохранения: {e}")
     

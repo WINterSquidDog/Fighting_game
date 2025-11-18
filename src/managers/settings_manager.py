@@ -51,7 +51,6 @@ class SettingsManager:
         try:
             with open(self.settings_file, 'w', encoding='utf-8') as f:
                 json.dump(self.current_settings, f, ensure_ascii=False, indent=2)
-            print("💾 Настройки сохранены")
         except Exception as e:
             print(f"❌ Ошибка сохранения настроек: {e}")
     

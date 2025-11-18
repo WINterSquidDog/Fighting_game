@@ -16,6 +16,7 @@ from src.managers.save_manager import SaveManager
 def main():
     pygame.init()
     pygame.mixer.init()
+    print("🔧 Запуск игры...")
     # Сначала загружаем настройки
     settings_manager = SettingsManager()
     print("🎮 Загруженные настройки:")

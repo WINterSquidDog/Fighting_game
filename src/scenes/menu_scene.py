@@ -125,53 +125,65 @@ class MenuScene(BaseScene):
         last_char = self.save_manager.get_last_character()
         last_cameo = self.save_manager.get_last_cameo()
         
+        print(f"🔍 Восстановление: персонаж='{last_char}', камео='{last_cameo}'")
+        
         # Находим индексы последних выбранных персонажей
+        char_found = False
         for i, char in enumerate(self.characters):
-            if char["name"] == last_char:
+            if char["name"].lower() == last_char.lower():
                 self.selected_character = i
                 char["selected"] = True
                 char["skin"] = self.save_manager.get_character_skin()
-                print(f"✅ Восстановлен персонаж: {char['name']}")
+                print(f"✅ Восстановлен персонаж: {char['name']} (индекс {i})")
+                char_found = True
                 break
         
+        if not char_found:
+            print(f"⚠️ Персонаж '{last_char}' не найден, используем первого")
+            self.selected_character = 0
+            self.characters[0]["selected"] = True
+        
+        cameo_found = False
         for i, cameo in enumerate(self.cameos):
-            if cameo["name"] == last_cameo:
+            if cameo["name"].lower() == last_cameo.lower():
                 self.selected_cameo = i
                 cameo["selected"] = True
                 cameo["skin"] = self.save_manager.get_cameo_skin()
-                print(f"✅ Восстановлено камео: {cameo['name']}")
+                print(f"✅ Восстановлено камео: {cameo['name']} (индекс {i})")
+                cameo_found = True
                 break
-    
+        
+        if not cameo_found:
+            print(f"⚠️ Камео '{last_cameo}' не найден, используем первого")
+            self.selected_cameo = 0
+            self.cameos[0]["selected"] = True
+
     def _select_character(self):
-        """Выбор персонажа с сохранением"""
-        for char in self.characters:
-            char["selected"] = False
-        self.characters[self.selected_character]["selected"] = True
+        """Выбор персонажа - можно выбирать одного и того же повторно"""
+        selected_char = self.characters[self.selected_character]
+        selected_char["selected"] = True
         
         # Сохраняем выбор
-        selected_char = self.characters[self.selected_character]
         self.save_manager.save_game(
-            character=selected_char["name"],
+            character=selected_char["name"],  # Сохраняем именно имя
             character_skin=selected_char["skin"]
         )
         
-        print(f"✅ Выбран персонаж: {selected_char['name']}")
+        print(f"💾 Сохранен персонаж: {selected_char['name']}")
         self._show_selection_confirmed()
-    
+
     def _select_cameo(self):
-        """Выбор камео с сохранением"""
-        for cameo in self.cameos:
-            cameo["selected"] = False
-        self.cameos[self.selected_cameo]["selected"] = True
+        """Выбор камео - можно выбирать одного и того же повторно"""
+        selected_cameo = self.cameos[self.selected_cameo]
+        selected_cameo["selected"] = True
         
         # Сохраняем выбор
-        selected_cameo = self.cameos[self.selected_cameo]
         self.save_manager.save_game(
-            cameo=selected_cameo["name"],
+            cameo=selected_cameo["name"],  # Сохраняем именно имя
             cameo_skin=selected_cameo["skin"]
         )
         
-        print(f"✅ Выбрано камео: {selected_cameo['name']}")
+        print(f"💾 Сохранено камео: {selected_cameo['name']}")
         self._show_selection_confirmed()
 
     def _load_all_cards(self):
@@ -687,7 +699,6 @@ class MenuScene(BaseScene):
                 art = pygame.transform.scale(art, (new_width, new_height))
                 return art
             else:
-                print(f"⚠️ Арт не найден: {art_path}")
                 return self._create_placeholder_art(filename, art_size)
         except Exception as e:
             print(f"❌ Ошибка загрузки арта {art_path}: {e}")
@@ -712,7 +723,7 @@ class MenuScene(BaseScene):
         return art
     
     def _draw_characters_section(self, screen, rect):
-        """Секция выбора персонажей"""
+        """Секция выбора персонажей - упрощенная логика карточек"""
         title_font = self.get_font(26, bold=True)
         if self.show_selection_confirmed:
             title_text = self.gm.settings.get_text("character_selected")
@@ -727,17 +738,18 @@ class MenuScene(BaseScene):
         character = self.characters[self.selected_character]
         card_size = self._get_card_size()
         
-        if character["selected"] or self.selecting_mode or self.show_selection_confirmed:
+        # 🎯 УПРОЩАЕМ: special карточка ТОЛЬКО во время выбора
+        if self.selecting_mode or self.show_selection_confirmed:
             card = character["card_special"]
         else:
-            card = character["card_normal"]
+            card = character["card_normal"]  # Всегда normal, кроме момента выбора
             
         card_rect = pygame.Rect(rect.centerx - card_size//2, rect.centery - card_size//2, card_size, card_size)
         screen.blit(card, card_rect)
         
         name_font = self.get_font(22, bold=True)
-        name_color = self.colors["selected"] if character["selected"] else self.colors["text_light"]
-        name_text = name_font.render(character["name"], True, name_color)
+        # 🎯 УПРОЩАЕМ: имя всегда одного цвета (не зависит от выбора)
+        name_text = name_font.render(character["name"], True, self.colors["text_light"])
         screen.blit(name_text, (rect.centerx - name_text.get_width() // 2, card_rect.bottom + self.s(15)))
         
         desc_font = self.get_font(16)
@@ -754,7 +766,7 @@ class MenuScene(BaseScene):
             arrow_font = self.get_font(28, bold=True)
             left_arrow = arrow_font.render("⟨", True, self.colors["text_light"])
             screen.blit(left_arrow, (self.char_left_btn.centerx - left_arrow.get_width() // 2,
-                                   self.char_left_btn.centery - left_arrow.get_height() // 2))
+                                self.char_left_btn.centery - left_arrow.get_height() // 2))
             
             pygame.draw.rect(screen, self.colors["button_primary"], self.char_right_btn, border_radius=self.s(10))
             pygame.draw.rect(screen, self.colors["text_light"], self.char_right_btn, self.s(2), border_radius=self.s(10))
@@ -766,15 +778,13 @@ class MenuScene(BaseScene):
         btn_height = self.s(45)
         self.char_select_btn = pygame.Rect(rect.centerx - btn_width//2, card_rect.bottom + self.s(60), btn_width, btn_height)
         
+        # 🎯 УПРОЩАЕМ: кнопка всегда "ВЫБРАТЬ" и всегда активна
         if self.show_selection_confirmed:
             btn_color = self.colors["selected"]
             btn_text = self.gm.settings.get_text("selected_button")
         elif self.selecting_mode:
             btn_color = self.colors["selected"]
             btn_text = self.gm.settings.get_text("confirm_button")
-        elif character["selected"]:
-            btn_color = (100, 100, 100)
-            btn_text = self.gm.settings.get_text("selected_button")
         else:
             btn_color = self.colors["button_primary"]
             btn_text = self.gm.settings.get_text("select_button")
@@ -797,9 +807,10 @@ class MenuScene(BaseScene):
             
         hint = hint_font.render(hint_text, True, self.colors["text_dark"])
         screen.blit(hint, (rect.centerx - hint.get_width() // 2, self.char_select_btn.bottom + self.s(15)))
+
     
     def _draw_cameo_section(self, screen, rect):
-        """Секция выбора камео"""
+        """Секция выбора камео - упрощенная логика карточек"""
         title_font = self.get_font(26, bold=True)
         if self.show_selection_confirmed:
             title_text = self.gm.settings.get_text("cameo_selected")
@@ -814,17 +825,18 @@ class MenuScene(BaseScene):
         cameo = self.cameos[self.selected_cameo]
         card_size = self._get_card_size()
         
-        if cameo["selected"] or self.selecting_mode or self.show_selection_confirmed:
+        # 🎯 УПРОЩАЕМ: special карточка ТОЛЬКО во время выбора
+        if self.selecting_mode or self.show_selection_confirmed:
             card = cameo["card_special"]
         else:
-            card = cameo["card_normal"]
+            card = cameo["card_normal"]  # Всегда normal, кроме момента выбора
             
         card_rect = pygame.Rect(rect.centerx - card_size//2, rect.centery - card_size//2, card_size, card_size)
         screen.blit(card, card_rect)
         
         name_font = self.get_font(20, bold=True)
-        name_color = self.colors["selected"] if cameo["selected"] else self.colors["text_light"]
-        name_text = name_font.render(cameo["name"], True, name_color)
+        # 🎯 УПРОЩАЕМ: имя всегда одного цвета (не зависит от выбора)
+        name_text = name_font.render(cameo["name"], True, self.colors["text_light"])
         screen.blit(name_text, (rect.centerx - name_text.get_width() // 2, card_rect.bottom + self.s(15)))
         
         desc_font = self.get_font(16)
@@ -841,7 +853,7 @@ class MenuScene(BaseScene):
             arrow_font = self.get_font(28, bold=True)
             left_arrow = arrow_font.render("⟨", True, self.colors["text_light"])
             screen.blit(left_arrow, (self.cameo_left_btn.centerx - left_arrow.get_width() // 2,
-                                   self.cameo_left_btn.centery - left_arrow.get_height() // 2))
+                                self.cameo_left_btn.centery - left_arrow.get_height() // 2))
             
             pygame.draw.rect(screen, self.colors["button_secondary"], self.cameo_right_btn, border_radius=self.s(10))
             pygame.draw.rect(screen, self.colors["text_light"], self.cameo_right_btn, self.s(2), border_radius=self.s(10))
@@ -853,15 +865,13 @@ class MenuScene(BaseScene):
         btn_height = self.s(45)
         self.cameo_select_btn = pygame.Rect(rect.centerx - btn_width//2, card_rect.bottom + self.s(60), btn_width, btn_height)
         
+        # 🎯 УПРОЩАЕМ: кнопка всегда "ВЫБРАТЬ" и всегда активна
         if self.show_selection_confirmed:
             btn_color = self.colors["selected"]
             btn_text = self.gm.settings.get_text("selected_button")
         elif self.selecting_mode:
             btn_color = self.colors["selected"]
             btn_text = self.gm.settings.get_text("confirm_button")
-        elif cameo["selected"]:
-            btn_color = (100, 100, 100)
-            btn_text = self.gm.settings.get_text("selected_button")
         else:
             btn_color = self.colors["button_secondary"]
             btn_text = self.gm.settings.get_text("select_button")
