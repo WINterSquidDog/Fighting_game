@@ -12,7 +12,7 @@ from src.core.character import Character
 from src.managers.resource_manager import ResourceManager
 from src.core.input_handler import InputHandler
 from src.managers.language_manager import LanguageManager
-
+from src.managers.save_manager import SaveManager
 def main():
     pygame.init()
     pygame.mixer.init()
