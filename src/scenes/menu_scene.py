@@ -3,6 +3,7 @@ import pygame
 import os
 from src.managers.game_manager import BaseScene
 from src.managers.save_manager import SaveManager
+from src.managers.skin_manager import SkinManager
 
 class MenuScene(BaseScene):
     def __init__(self, gm):
@@ -12,6 +13,11 @@ class MenuScene(BaseScene):
         self.save_manager = SaveManager()
         self.save_manager.load_save()
         
+        # Добавляем менеджер скинов
+        self.skin_manager = SkinManager()
+        self.save_manager = SaveManager()
+        self.save_manager.load_save()
+
         # Цветовая схема
         self.colors = {
             "background": (20, 20, 40),
