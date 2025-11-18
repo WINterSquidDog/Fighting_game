@@ -439,12 +439,13 @@ class MenuScene(BaseScene):
         screen.blit(trophies_text, (screen.get_width() - self.s(150), self.s(50)))
     
     def _draw_section_tabs(self, screen):
-        """Отрисовка вертикальных вкладок меню слева и справа, центрированных по Y"""
+        """Отрисовка вертикальных вкладок меню слева и справа, центрированных по Y - увеличенные"""
         self.tab_buttons = []
         
-        tab_width = self.s(140)
-        tab_height = self.s(40)
-        tab_spacing = self.s(8)
+        # Увеличиваем размеры кнопок
+        tab_width = self.s(160)  # Было 140
+        tab_height = self.s(50)  # Было 40
+        tab_spacing = self.s(12)  # Было 8
         
         # Левая группа: FIGHT, CHARACTERS, CAMEOS
         left_tabs = self.sections[:3]
@@ -459,26 +460,26 @@ class MenuScene(BaseScene):
         right_start_y = (screen.get_height() - right_total_height) // 2
         
         # Левые вкладки
-        left_x = self.s(20)
+        left_x = self.s(30)  # Немного отступ увеличил
         for i, section in enumerate(left_tabs):
             tab_rect = pygame.Rect(left_x, left_start_y + i * (tab_height + tab_spacing), tab_width, tab_height)
             self.tab_buttons.append(tab_rect)
             
             color = self.colors["button_primary"] if i == self.current_section else self.colors["header_bg"]
             
-            pygame.draw.rect(screen, color, tab_rect, border_radius=self.s(8))
-            pygame.draw.rect(screen, self.colors["text_light"], tab_rect, self.s(2), border_radius=self.s(8))
+            pygame.draw.rect(screen, color, tab_rect, border_radius=self.s(10))  # Увеличил радиус
+            pygame.draw.rect(screen, self.colors["text_light"], tab_rect, self.s(2), border_radius=self.s(10))
             
-            # Подбираем размер шрифта
-            max_font_size = self.f(14)
-            min_font_size = self.f(10)
+            # Увеличил шрифт
+            max_font_size = self.f(16)  # Было 14
+            min_font_size = self.f(11)  # Было 10
             font_size = max_font_size
             
             while font_size >= min_font_size:
                 font = pygame.font.SysFont("arial", int(font_size), bold=True)
                 text_surface = font.render(section, True, self.colors["text_light"])
                 
-                if text_surface.get_width() <= tab_width - self.s(10):
+                if text_surface.get_width() <= tab_width - self.s(15):
                     break
                 font_size -= 1
             
@@ -489,7 +490,7 @@ class MenuScene(BaseScene):
                                    tab_rect.centery - final_text.get_height() // 2))
         
         # Правые вкладки
-        right_x = screen.get_width() - tab_width - self.s(20)
+        right_x = screen.get_width() - tab_width - self.s(30)  # Немного отступ увеличил
         for i, section in enumerate(right_tabs):
             tab_index = i + 3  # Индекс в общем списке
             tab_rect = pygame.Rect(right_x, right_start_y + i * (tab_height + tab_spacing), tab_width, tab_height)
@@ -500,19 +501,19 @@ class MenuScene(BaseScene):
             else:
                 color = self.colors["button_secondary"] if tab_index == self.current_section else self.colors["header_bg"]
             
-            pygame.draw.rect(screen, color, tab_rect, border_radius=self.s(8))
-            pygame.draw.rect(screen, self.colors["text_light"], tab_rect, self.s(2), border_radius=self.s(8))
+            pygame.draw.rect(screen, color, tab_rect, border_radius=self.s(10))  # Увеличил радиус
+            pygame.draw.rect(screen, self.colors["text_light"], tab_rect, self.s(2), border_radius=self.s(10))
             
-            # Подбираем размер шрифта
-            max_font_size = self.f(14)
-            min_font_size = self.f(10)
+            # Увеличил шрифт
+            max_font_size = self.f(16)  # Было 14
+            min_font_size = self.f(11)  # Было 10
             font_size = max_font_size
             
             while font_size >= min_font_size:
                 font = pygame.font.SysFont("arial", int(font_size), bold=True)
                 text_surface = font.render(section, True, self.colors["text_light"])
                 
-                if text_surface.get_width() <= tab_width - self.s(10):
+                if text_surface.get_width() <= tab_width - self.s(15):
                     break
                 font_size -= 1
             
@@ -546,47 +547,49 @@ class MenuScene(BaseScene):
                 cameo_y = rect.centery - card_size//2
                 screen.blit(cameo_card, (cameo_x, cameo_y))
         
-        # Информация о комбинации
-        title_font = self.get_font(26, bold=True)
-        title_text = self.gm.settings.get_text("battle_mode")
-        title = title_font.render(title_text, True, self.colors["text_light"])
-        screen.blit(title, (rect.centerx - title.get_width() // 2, rect.y + self.s(25)))
+        # УДАЛЕНА надпись Battle Modes и комбинация not selected + not selected
         
-        combo_font = self.get_font(20)
-        char_name = selected_char["name"] if selected_char else self.gm.settings.get_text("not_selected")
-        cameo_name = selected_cameo["name"] if selected_cameo else self.gm.settings.get_text("not_selected_female")
-        combo_text = combo_font.render(f"{char_name} + {cameo_name}", True, 
-                                     self.colors["selected"] if selected_char and selected_cameo else self.colors["text_dark"])
-        screen.blit(combo_text, (rect.centerx - combo_text.get_width() // 2, rect.y + self.s(60)))
+        # Кнопка выбора режима (нерабочая) - внизу по центру
+        mode_btn_width = self.s(200)
+        mode_btn_height = self.s(50)
+        self.mode_button = pygame.Rect(
+            rect.centerx - mode_btn_width // 2,  # Центрируем по X
+            rect.bottom - mode_btn_height - self.s(30),  # Оставляем по Y внизу
+            mode_btn_width,
+            mode_btn_height
+        )
         
-        # Кнопка начала боя
-        btn_width = min(self.s(350), rect.width * 0.7)
-        btn_height = self.s(70)
-        self.battle_button = pygame.Rect(rect.centerx - btn_width//2, rect.centery + self.s(100), btn_width, btn_height)
+        pygame.draw.rect(screen, self.colors["button_secondary"], self.mode_button, border_radius=self.s(10))
+        pygame.draw.rect(screen, self.colors["text_light"], self.mode_button, self.s(2), border_radius=self.s(10))
+        
+        mode_font = self.get_font(18, bold=True)
+        mode_text = mode_font.render("VS BOT", True, self.colors["text_light"])
+        screen.blit(mode_text, (self.mode_button.centerx - mode_text.get_width() // 2,
+                              self.mode_button.centery - mode_text.get_height() // 2))
+        
+        # Кнопка начала боя - внизу справа
+        btn_width = self.s(180)
+        btn_height = self.s(50)
+        self.battle_button = pygame.Rect(
+            rect.right - btn_width - self.s(50),
+            rect.bottom - btn_height - self.s(30),
+            btn_width,
+            btn_height
+        )
         battle_enabled = selected_char and selected_cameo
         
         if battle_enabled:
-            pygame.draw.rect(screen, self.colors["button_primary"], self.battle_button, border_radius=self.s(12))
-            pygame.draw.rect(screen, self.colors["accent"], self.battle_button, self.s(3), border_radius=self.s(12))
+            pygame.draw.rect(screen, self.colors["button_primary"], self.battle_button, border_radius=self.s(10))
+            pygame.draw.rect(screen, self.colors["accent"], self.battle_button, self.s(3), border_radius=self.s(10))
         else:
-            pygame.draw.rect(screen, (100, 100, 100), self.battle_button, border_radius=self.s(12))
-            pygame.draw.rect(screen, (150, 150, 150), self.battle_button, self.s(3), border_radius=self.s(12))
+            pygame.draw.rect(screen, (100, 100, 100), self.battle_button, border_radius=self.s(10))
+            pygame.draw.rect(screen, (150, 150, 150), self.battle_button, self.s(3), border_radius=self.s(10))
         
-        btn_font = self.get_font(22, bold=True)
-        btn_text = btn_font.render(self.gm.settings.get_text("fight_vs_bot"), True, 
-                                 self.colors["text_light"] if battle_enabled else (200, 200, 200))
+        btn_font = self.get_font(20, bold=True)
+        btn_text = btn_font.render("FIGHT!", True, 
+                                 self.colors["text_light"] if battle_enabled else self.colors["text_dark"])
         screen.blit(btn_text, (self.battle_button.centerx - btn_text.get_width() // 2,
                              self.battle_button.centery - btn_text.get_height() // 2))
-        
-        # Подсказка
-        hint_font = self.get_font(16)
-        if not battle_enabled:
-            hint_text = self.gm.settings.get_text("select_required")
-            hint = hint_font.render(hint_text, True, (255, 100, 100))
-        else:
-            hint_text = self.gm.settings.get_text("start_battle_hint")
-            hint = hint_font.render(hint_text, True, self.colors["text_dark"])
-        screen.blit(hint, (rect.centerx - hint.get_width() // 2, self.battle_button.bottom + self.s(20)))
     
     def _draw_characters_section(self, screen, rect):
         """Секция выбора персонажей"""
@@ -827,31 +830,12 @@ class MenuScene(BaseScene):
         screen.blit(hint, (rect.centerx - hint.get_width() // 2, self.exit_button.bottom + self.s(20)))
     
     def _draw_bottom_bar(self, screen):
-        """Нижняя панель с подсказками"""
-        bar_height = self.s(45)
+        """Нижняя панель - УДАЛЕНА навигация, оставим только копирайт"""
+        bar_height = self.s(30)  # Уменьшил высоту
         bar_rect = pygame.Rect(0, screen.get_height() - bar_height, screen.get_width(), bar_height)
         pygame.draw.rect(screen, self.colors["header_bg"], bar_rect)
         
-        hint_font = self.get_font(15)
-        
-        if self.show_selection_confirmed:
-            hints = [self.gm.settings.get_text("auto_return")]
-        elif self.selecting_mode:
-            hints = [
-                self.gm.settings.get_text("confirm_action"),
-                self.gm.settings.get_text("cancel_action")
-            ]
-        else:
-            hints = [
-                self.gm.settings.get_text("navigation"),
-                self.gm.settings.get_text("selection"), 
-                self.gm.settings.get_text("browse")
-            ]
-        
-        for i, hint in enumerate(hints):
-            hint_text = hint_font.render(hint, True, self.colors["text_dark"])
-            screen.blit(hint_text, (self.s(25) + i * self.s(220), bar_rect.centery - hint_text.get_height()//2))
-        
-        copyright_text = hint_font.render("© 2024 Brawl Fighters", True, self.colors["text_dark"])
+        copyright_font = self.get_font(12)
+        copyright_text = copyright_font.render("© 2024 Brawl Fighters", True, self.colors["text_dark"])
         screen.blit(copyright_text, (screen.get_width() - copyright_text.get_width() - self.s(25), 
                                    bar_rect.centery - copyright_text.get_height()//2))
