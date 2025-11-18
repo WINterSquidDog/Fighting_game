@@ -47,20 +47,31 @@ class SaveManager:
     def save_game(self, character=None, cameo=None, character_skin=None, cameo_skin=None):
         """Сохраняет текущий прогресс"""
         try:
-            if character:
+            print(f"💾 Начало сохранения: char={character}, cameo={cameo}")
+            
+            if character is not None:
                 self.data["last_character"] = character
-                print(f"💾 Сохраняем персонажа: {character}")
-            if cameo:
+                print(f"💾 Установлен персонаж: {character}")
+            if cameo is not None:
                 self.data["last_cameo"] = cameo
-                print(f"💾 Сохраняем камео: {cameo}")
-            if character_skin:
+                print(f"💾 Установлено камео: {cameo}")
+            if character_skin is not None:
                 self.data["character_skin"] = character_skin
-            if cameo_skin:
+            if cameo_skin is not None:
                 self.data["cameo_skin"] = cameo_skin
+            
+            print(f"💾 Данные перед сохранением: {self.data}")
             
             with open(self.save_file, 'w', encoding='utf-8') as f:
                 json.dump(self.data, f, ensure_ascii=False, indent=2)
-            print("💾 Весь прогресс сохранен")
+            print("💾 Файл сохранения записан")
+            
+            # Проверим что записалось
+            if os.path.exists(self.save_file):
+                with open(self.save_file, 'r', encoding='utf-8') as f:
+                    saved_data = json.load(f)
+                    print(f"💾 Проверка файла: {saved_data}")
+            
         except Exception as e:
             print(f"❌ Ошибка сохранения: {e}")
     

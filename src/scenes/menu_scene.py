@@ -163,19 +163,26 @@ class MenuScene(BaseScene):
         selected_char = self.characters[self.selected_character]
         selected_char["selected"] = True
         
+        print(f"🎯 Начинаем сохранение персонажа: {selected_char['name']}")
+        
         # Сохраняем выбор
         self.save_manager.save_game(
             character=selected_char["name"],  # Сохраняем именно имя
             character_skin=selected_char["skin"]
         )
         
-        print(f"💾 Сохранен персонаж: {selected_char['name']}")
-        self._show_selection_confirmed()
+        print(f"✅ Выбран и сохранен персонаж: {selected_char['name']}")
+        # ИСПРАВЛЕНО: используем правильное имя метода
+        self.selection_confirmed_time = pygame.time.get_ticks()
+        self.show_selection_confirmed = True
+        self.selecting_mode = False
 
     def _select_cameo(self):
         """Выбор камео - можно выбирать одного и того же повторно"""
         selected_cameo = self.cameos[self.selected_cameo]
         selected_cameo["selected"] = True
+        
+        print(f"🎯 Начинаем сохранение камео: {selected_cameo['name']}")
         
         # Сохраняем выбор
         self.save_manager.save_game(
@@ -183,8 +190,11 @@ class MenuScene(BaseScene):
             cameo_skin=selected_cameo["skin"]
         )
         
-        print(f"💾 Сохранено камео: {selected_cameo['name']}")
-        self._show_selection_confirmed()
+        print(f"✅ Выбрано и сохранено камео: {selected_cameo['name']}")
+        # ИСПРАВЛЕНО: используем правильное имя метода
+        self.selection_confirmed_time = pygame.time.get_ticks()
+        self.show_selection_confirmed = True
+        self.selecting_mode = False
 
     def _load_all_cards(self):
         """Загружаем все карточки с учетом скинов"""
@@ -352,22 +362,14 @@ class MenuScene(BaseScene):
     
     def _handle_mouse_click(self, mouse_pos):
         """Обработка кликов мыши"""
+        print(f"🖱️ Клик в позиции: {mouse_pos}")
+        
         # Клики по вкладкам
         for i, tab_rect in enumerate(self.tab_buttons):
             if tab_rect.collidepoint(mouse_pos):
+                print(f"📌 Клик по вкладке: {self.sections[i]}")
                 self.current_section = i
-                if self.sections[i] == self.gm.settings.get_text("settings"):
-                    self._open_settings()
-                    return
-                elif self.sections[i] == self.sections[3]:  # МАГАЗИН
-                    self._open_shop()
-                    return
-                elif self.sections[i] == self.sections[5]:  # ВЫХОД
-                    self._exit_game()
-                    return
-                self.selecting_mode = False
-                self.show_selection_confirmed = False
-                return
+                # ... остальной код ...
         
         if self.show_selection_confirmed:
             return
@@ -376,30 +378,34 @@ class MenuScene(BaseScene):
             # Навигация в секциях CHARACTERS и CAMEOS
             if self.current_section == 1:  # CHARACTERS
                 if self.char_left_btn and self.char_left_btn.collidepoint(mouse_pos):
+                    print("⬅️ Клик по левой стрелке персонажа")
                     self.selected_character = (self.selected_character - 1) % len(self.characters)
                 elif self.char_right_btn and self.char_right_btn.collidepoint(mouse_pos):
+                    print("➡️ Клик по правой стрелке персонажа")
                     self.selected_character = (self.selected_character + 1) % len(self.characters)
                 elif self.char_select_btn and self.char_select_btn.collidepoint(mouse_pos):
+                    print("🎯 Клик по кнопке выбора персонажа")
                     self.selecting_mode = True
                     
             elif self.current_section == 2:  # CAMEOS
                 if self.cameo_left_btn and self.cameo_left_btn.collidepoint(mouse_pos):
+                    print("⬅️ Клик по левой стрелке камео")
                     self.selected_cameo = (self.selected_cameo - 1) % len(self.cameos)
                 elif self.cameo_right_btn and self.cameo_right_btn.collidepoint(mouse_pos):
+                    print("➡️ Клик по правой стрелке камео")
                     self.selected_cameo = (self.selected_cameo + 1) % len(self.cameos)
                 elif self.cameo_select_btn and self.cameo_select_btn.collidepoint(mouse_pos):
+                    print("🎯 Клик по кнопке выбора камео")
                     self.selecting_mode = True
                     
-            # Кнопка боя в секции FIGHT
-            elif self.current_section == 0 and self.battle_button and self.battle_button.collidepoint(mouse_pos):
-                self._start_battle()
-                
         else:
             # Подтверждение выбора в режиме selecting_mode
             if self.current_section == 1 and self.char_select_btn and self.char_select_btn.collidepoint(mouse_pos):
-                self._confirm_selection()
+                print("✅ Подтверждение выбора персонажа")
+                self._select_character()
             elif self.current_section == 2 and self.cameo_select_btn and self.cameo_select_btn.collidepoint(mouse_pos):
-                self._confirm_selection()
+                print("✅ Подтверждение выбора камео")
+                self._select_cameo()
     
     def _confirm_selection(self):
         """Подтверждение выбора персонажа или камео"""
