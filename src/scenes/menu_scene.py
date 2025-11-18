@@ -15,8 +15,6 @@ class MenuScene(BaseScene):
         
         # Добавляем менеджер скинов
         self.skin_manager = SkinManager()
-        self.save_manager = SaveManager()
-        self.save_manager.load_save()
 
         # Цветовая схема
         self.colors = {
@@ -95,6 +93,39 @@ class MenuScene(BaseScene):
                 "skin": "default"
             }
         ]
+
+        # Данные скинов
+        self.character_skins = {
+            "1x1x1x1": [
+                {"id": "default", "name": "Timeless", "unlocked": True},
+                {"id": "timeless", "name": "Timeless", "unlocked": True}
+            ],
+            "chara": [
+                {"id": "default", "name": "Determined", "unlocked": True}
+            ],
+            "steve": [
+                {"id": "default", "name": "Builder", "unlocked": True}
+            ]
+        }
+
+        self.cameo_skins = {
+            "c00lk1d": [
+                {"id": "default", "name": "Hacker", "unlocked": True},
+                {"id": "tag_time", "name": "Tag Time", "unlocked": True}
+            ],
+            "papyrus": [
+                {"id": "default", "name": "The Great", "unlocked": True}
+            ],
+            "larry": [
+                {"id": "default", "name": "Lava Guy", "unlocked": True}
+            ]
+        }
+
+        # Состояние выбора скинов
+        self.selected_skin_tab = 0  # 0 - персонажи, 1 - камео
+        self.selected_skin_index = 0
+        self.skin_selecting_mode = False
+        self.current_skins = []
         
         # Кнопки для мыши
         self.tab_buttons = []
@@ -104,6 +135,11 @@ class MenuScene(BaseScene):
         self.cameo_left_btn = None
         self.cameo_right_btn = None
         self.cameo_select_btn = None
+        self.skin_tab_left = None
+        self.skin_tab_right = None
+        self.skin_left_btn = None
+        self.skin_right_btn = None
+        self.skin_select_btn = None
         self.battle_button = None
         self.mode_button = None
         self.shop_button = None
@@ -178,7 +214,6 @@ class MenuScene(BaseScene):
         )
         
         print(f"✅ Выбран и сохранен персонаж: {selected_char['name']}")
-        # ИСПРАВЛЕНО: используем правильное имя метода
         self.selection_confirmed_time = pygame.time.get_ticks()
         self.show_selection_confirmed = True
         self.selecting_mode = False
@@ -197,7 +232,6 @@ class MenuScene(BaseScene):
         )
         
         print(f"✅ Выбрано и сохранено камео: {selected_cameo['name']}")
-        # ИСПРАВЛЕНО: используем правильное имя метода
         self.selection_confirmed_time = pygame.time.get_ticks()
         self.show_selection_confirmed = True
         self.selecting_mode = False
@@ -310,6 +344,9 @@ class MenuScene(BaseScene):
             return
             
         self.sections = self.gm.settings.get_text("menu_sections")
+        # Добавляем вкладку скинов если ее нет
+        if len(self.sections) == 6:  # Если стандартные 6 вкладок
+            self.sections.insert(3, "SKINS")  # Добавляем после CAMEOS
         
         # Обновляем описания персонажей
         for char in self.characters:
@@ -323,20 +360,24 @@ class MenuScene(BaseScene):
         
         for event in events:
             if event.type == pygame.KEYDOWN:
-                if not self.selecting_mode and not self.show_selection_confirmed:
+                if not self.selecting_mode and not self.show_selection_confirmed and not self.skin_selecting_mode:
                     if event.key == pygame.K_LEFT:
                         self.current_section = (self.current_section - 1) % len(self.sections)
+                        if self.current_section == 3:  # SKINS
+                            self._refresh_current_skins()
                     elif event.key == pygame.K_RIGHT:
                         self.current_section = (self.current_section + 1) % len(self.sections)
+                        if self.current_section == 3:  # SKINS
+                            self._refresh_current_skins()
                     elif event.key == pygame.K_RETURN:
                         current_section_name = self.sections[self.current_section]
                         if current_section_name == self.gm.settings.get_text("settings"):
                             self._open_settings()
                         elif current_section_name == self.sections[0]:  # БОЙ
                             self._start_battle()
-                        elif current_section_name == self.sections[3]:  # МАГАЗИН
+                        elif current_section_name == self.sections[4]:  # МАГАЗИН
                             self._open_shop()
-                        elif current_section_name == self.sections[5]:  # ВЫХОД
+                        elif current_section_name == self.sections[6]:  # ВЫХОД
                             self._exit_game()
                             
                     elif self.current_section == 1:  # CHARACTERS
@@ -355,12 +396,35 @@ class MenuScene(BaseScene):
                         elif event.key == pygame.K_RETURN:
                             if not self.selecting_mode:
                                 self.selecting_mode = True
+                    elif self.current_section == 3:  # SKINS
+                        if event.key in [pygame.K_a, pygame.K_LEFT]:
+                            self.selected_skin_tab = (self.selected_skin_tab - 1) % 2
+                            self._refresh_current_skins()
+                        elif event.key in [pygame.K_d, pygame.K_RIGHT]:
+                            self.selected_skin_tab = (self.selected_skin_tab + 1) % 2
+                            self._refresh_current_skins()
+                        elif event.key == pygame.K_RETURN:
+                            if not self.skin_selecting_mode:
+                                self.skin_selecting_mode = True
                 
                 elif self.selecting_mode and not self.show_selection_confirmed:
                     if event.key == pygame.K_RETURN:
-                        self._confirm_selection()
+                        if self.current_section == 1:
+                            self._select_character()
+                        elif self.current_section == 2:
+                            self._select_cameo()
                     elif event.key == pygame.K_ESCAPE:
                         self.selecting_mode = False
+                
+                elif self.skin_selecting_mode and not self.show_selection_confirmed:
+                    if event.key == pygame.K_RETURN:
+                        self._select_skin()
+                    elif event.key == pygame.K_ESCAPE:
+                        self.skin_selecting_mode = False
+                    elif event.key in [pygame.K_a, pygame.K_LEFT]:
+                        self.selected_skin_index = (self.selected_skin_index - 1) % len(self.current_skins)
+                    elif event.key in [pygame.K_d, pygame.K_RIGHT]:
+                        self.selected_skin_index = (self.selected_skin_index + 1) % len(self.current_skins)
             
             elif event.type == pygame.MOUSEBUTTONDOWN:
                 if event.button == 1:
@@ -368,69 +432,99 @@ class MenuScene(BaseScene):
     
     def _handle_mouse_click(self, mouse_pos):
         """Обработка кликов мыши"""
-        print(f"🖱️ Клик в позиции: {mouse_pos}")
-        
-        # Клики по вкладкам
-        for i, tab_rect in enumerate(self.tab_buttons):
-            if tab_rect.collidepoint(mouse_pos):
-                print(f"📌 Клик по вкладке: {self.sections[i]}")
-                self.current_section = i
-                # ... остальной код ...
-        
         if self.show_selection_confirmed:
             return
             
-        if not self.selecting_mode:
-            # Навигация в секциях CHARACTERS и CAMEOS
+        if not self.selecting_mode and not self.skin_selecting_mode:
+            # Клики по вкладкам
+            for i, tab_rect in enumerate(self.tab_buttons):
+                if tab_rect.collidepoint(mouse_pos):
+                    self.current_section = i
+                    if i == 3:  # SKINS
+                        self._refresh_current_skins()
+            
+            # Навигация в секциях
             if self.current_section == 1:  # CHARACTERS
                 if self.char_left_btn and self.char_left_btn.collidepoint(mouse_pos):
-                    print("⬅️ Клик по левой стрелке персонажа")
                     self.selected_character = (self.selected_character - 1) % len(self.characters)
                 elif self.char_right_btn and self.char_right_btn.collidepoint(mouse_pos):
-                    print("➡️ Клик по правой стрелке персонажа")
                     self.selected_character = (self.selected_character + 1) % len(self.characters)
                 elif self.char_select_btn and self.char_select_btn.collidepoint(mouse_pos):
-                    print("🎯 Клик по кнопке выбора персонажа")
                     self.selecting_mode = True
                     
             elif self.current_section == 2:  # CAMEOS
                 if self.cameo_left_btn and self.cameo_left_btn.collidepoint(mouse_pos):
-                    print("⬅️ Клик по левой стрелке камео")
                     self.selected_cameo = (self.selected_cameo - 1) % len(self.cameos)
                 elif self.cameo_right_btn and self.cameo_right_btn.collidepoint(mouse_pos):
-                    print("➡️ Клик по правой стрелке камео")
                     self.selected_cameo = (self.selected_cameo + 1) % len(self.cameos)
                 elif self.cameo_select_btn and self.cameo_select_btn.collidepoint(mouse_pos):
-                    print("🎯 Клик по кнопке выбора камео")
                     self.selecting_mode = True
+            
+            elif self.current_section == 3:  # SKINS
+                if self.skin_tab_left and self.skin_tab_left.collidepoint(mouse_pos):
+                    self.selected_skin_tab = (self.selected_skin_tab - 1) % 2
+                    self._refresh_current_skins()
+                elif self.skin_tab_right and self.skin_tab_right.collidepoint(mouse_pos):
+                    self.selected_skin_tab = (self.selected_skin_tab + 1) % 2
+                    self._refresh_current_skins()
+                elif self.skin_left_btn and self.skin_left_btn.collidepoint(mouse_pos):
+                    self.selected_skin_index = (self.selected_skin_index - 1) % len(self.current_skins)
+                elif self.skin_right_btn and self.skin_right_btn.collidepoint(mouse_pos):
+                    self.selected_skin_index = (self.selected_skin_index + 1) % len(self.current_skins)
+                elif self.skin_select_btn and self.skin_select_btn.collidepoint(mouse_pos):
+                    self.skin_selecting_mode = True
                     
-        else:
+        elif self.selecting_mode:
             # Подтверждение выбора в режиме selecting_mode
             if self.current_section == 1 and self.char_select_btn and self.char_select_btn.collidepoint(mouse_pos):
-                print("✅ Подтверждение выбора персонажа")
                 self._select_character()
             elif self.current_section == 2 and self.cameo_select_btn and self.cameo_select_btn.collidepoint(mouse_pos):
-                print("✅ Подтверждение выбора камео")
                 self._select_cameo()
+        
+        elif self.skin_selecting_mode:
+            # Подтверждение выбора скина
+            if self.current_section == 3 and self.skin_select_btn and self.skin_select_btn.collidepoint(mouse_pos):
+                self._select_skin()
     
-    def _confirm_selection(self):
-        """Подтверждение выбора персонажа или камео"""
-        if self.current_section == 1:  # CHARACTERS
-            for char in self.characters:
-                char["selected"] = False
-            self.characters[self.selected_character]["selected"] = True
-            print(f"✅ Выбран персонаж: {self.characters[self.selected_character]['name']}")
+    def _refresh_current_skins(self):
+        """Обновляет список текущих скинов при смене таба"""
+        if self.selected_skin_tab == 0:  # Персонажи
+            selected_char = next((char for char in self.characters if char["selected"]), None)
+            self.current_skins = self.character_skins.get(selected_char['name'].lower() if selected_char else "", [])
+        else:  # Камео
+            selected_cameo = next((cameo for cameo in self.cameos if cameo["selected"]), None)
+            self.current_skins = self.cameo_skins.get(selected_cameo['name'].lower() if selected_cameo else "", [])
+        self.selected_skin_index = 0
+
+    def _select_skin(self):
+        """Применяет выбранный скин"""
+        if not self.current_skins or self.selected_skin_index >= len(self.current_skins):
+            return
             
-        elif self.current_section == 2:  # CAMEOS
-            for cameo in self.cameos:
-                cameo["selected"] = False
-            self.cameos[self.selected_cameo]["selected"] = True
-            print(f"✅ Выбрано камео: {self.cameos[self.selected_cameo]['name']}")
+        skin = self.current_skins[self.selected_skin_index]
+        
+        if self.selected_skin_tab == 0:  # Персонажи
+            selected_char = next((char for char in self.characters if char["selected"]), None)
+            if selected_char:
+                selected_char["skin"] = skin["id"]
+                # Сохраняем в сохранения
+                self.save_manager.save_game(character_skin=skin["id"])
+                print(f"✅ Применен скин персонажа: {skin['name']}")
+        else:  # Камео
+            selected_cameo = next((cameo for cameo in self.cameos if cameo["selected"]), None)
+            if selected_cameo:
+                selected_cameo["skin"] = skin["id"]
+                # Сохраняем в сохранения
+                self.save_manager.save_game(cameo_skin=skin["id"])
+                print(f"✅ Применен скин камео: {skin['name']}")
+        
+        # Обновляем карточки с новым скином
+        self._load_all_cards()
         
         self.selection_confirmed_time = pygame.time.get_ticks()
         self.show_selection_confirmed = True
-        self.selecting_mode = False
-    
+        self.skin_selecting_mode = False
+
     def _start_battle(self):
         selected_char = next((char for char in self.characters if char["selected"]), None)
         selected_cameo = next((cameo for cameo in self.cameos if cameo["selected"]), None)
@@ -481,6 +575,8 @@ class MenuScene(BaseScene):
             current_time = pygame.time.get_ticks()
             if current_time - self.selection_confirmed_time > 1500:
                 self.show_selection_confirmed = False
+                self.selecting_mode = False
+                self.skin_selecting_mode = False
                 # Автоматически возвращаемся на вкладку FIGHT после подтверждения выбора
                 self.current_section = 0
     
@@ -499,10 +595,12 @@ class MenuScene(BaseScene):
         elif self.current_section == 2:
             self._draw_cameo_section(screen, content_rect)
         elif self.current_section == 3:
-            self._draw_shop_section(screen, content_rect)
+            self._draw_skins_section(screen, content_rect)
         elif self.current_section == 4:
-            self._draw_settings_section(screen, content_rect)
+            self._draw_shop_section(screen, content_rect)
         elif self.current_section == 5:
+            self._draw_settings_section(screen, content_rect)
+        elif self.current_section == 6:
             self._draw_exit_section(screen, content_rect)
         
         self._draw_bottom_bar(screen)
@@ -549,10 +647,10 @@ class MenuScene(BaseScene):
         tab_height = self.s(55)  # Было 50 -> 55
         tab_spacing = self.s(15)  # Было 12 -> 15
         
-        # Левая группа: FIGHT, CHARACTERS, CAMEOS
-        left_tabs = self.sections[:3]
+        # Левая группа: FIGHT, CHARACTERS, CAMEOS, SKINS
+        left_tabs = self.sections[:4]
         # Правая группа: SHOP, SETTINGS, EXIT
-        right_tabs = self.sections[3:]
+        right_tabs = self.sections[4:]
         
         # Центрируем обе группы по вертикали
         left_total_height = len(left_tabs) * tab_height + (len(left_tabs) - 1) * tab_spacing
@@ -569,12 +667,12 @@ class MenuScene(BaseScene):
             
             color = self.colors["button_primary"] if i == self.current_section else self.colors["header_bg"]
             
-            pygame.draw.rect(screen, color, tab_rect, border_radius=self.s(12))  # Увеличил радиус
+            pygame.draw.rect(screen, color, tab_rect, border_radius=self.s(12))
             pygame.draw.rect(screen, self.colors["text_light"], tab_rect, self.s(2), border_radius=self.s(12))
             
             # ⚡ УВЕЛИЧИЛ ШРИФТ
-            max_font_size = self.f(18)  # Было 16 -> 18
-            min_font_size = self.f(12)  # Было 11 -> 12
+            max_font_size = self.f(18)
+            min_font_size = self.f(12)
             font_size = max_font_size
             
             while font_size >= min_font_size:
@@ -594,21 +692,21 @@ class MenuScene(BaseScene):
         # Правые вкладки
         right_x = screen.get_width() - tab_width - self.s(30)
         for i, section in enumerate(right_tabs):
-            tab_index = i + 3  # Индекс в общем списке
+            tab_index = i + 4  # Индекс в общем списке
             tab_rect = pygame.Rect(right_x, right_start_y + i * (tab_height + tab_spacing), tab_width, tab_height)
             self.tab_buttons.append(tab_rect)
             
-            if section == self.sections[5]:  # ВЫХОД
+            if section == self.sections[6]:  # ВЫХОД
                 color = self.colors["danger"] if tab_index == self.current_section else (150, 80, 80)
             else:
                 color = self.colors["button_secondary"] if tab_index == self.current_section else self.colors["header_bg"]
             
-            pygame.draw.rect(screen, color, tab_rect, border_radius=self.s(12))  # Увеличил радиус
+            pygame.draw.rect(screen, color, tab_rect, border_radius=self.s(12))
             pygame.draw.rect(screen, self.colors["text_light"], tab_rect, self.s(2), border_radius=self.s(12))
             
             # ⚡ УВЕЛИЧИЛ ШРИФТ
-            max_font_size = self.f(18)  # Было 16 -> 18
-            min_font_size = self.f(12)  # Было 11 -> 12
+            max_font_size = self.f(18)
+            min_font_size = self.f(12)
             font_size = max_font_size
             
             while font_size >= min_font_size:
@@ -632,30 +730,27 @@ class MenuScene(BaseScene):
         selected_cameo = next((cameo for cameo in self.cameos if cameo["selected"]), None)
         
         # 🎨 ДОБАВЛЯЕМ АРТЫ ПО ЦЕНТРУ (перекрывающиеся)
-        art_size = self.s(350)  # Размер артов - МЕНЯЙТЕ ЗДЕСЬ
+        art_size = self.s(350)
         
         # Арт персонажа (слева, немного перекрывает камео)
         if selected_char:
             char_art = self._load_art_image(f"{selected_char['name'].lower()}.png", art_size)
             if char_art:
-                # 🎨 КООРДИНАТЫ ПЕРСОНАЖА - МЕНЯЙТЕ ЗДЕСЬ
-                char_x = rect.centerx - art_size + self.s(40)  # Сдвиг влево от центра
-                char_y = rect.centery - art_size // 2  # Центр по вертикали
+                char_x = rect.centerx - art_size + self.s(40)
+                char_y = rect.centery - art_size // 2
                 screen.blit(char_art, (char_x, char_y))
         
         # Арт камео (справа, перекрывает персонажа)
         if selected_cameo:
             cameo_art = self._load_art_image(f"{selected_cameo['name'].lower()}.png", art_size)
             if cameo_art:
-                # 🎨 КООРДИНАТЫ КАМЕО - МЕНЯЙТЕ ЗДЕСЬ
-                cameo_x = rect.centerx - self.s(40)  # Сдвиг вправо от центра
-                cameo_y = rect.centery - art_size // 2  # Центр по вертикали
+                cameo_x = rect.centerx - self.s(40)
+                cameo_y = rect.centery - art_size // 2
                 screen.blit(cameo_art, (cameo_x, cameo_y))
         
         # Кнопка выбора режима (нерабочая) - внизу по центру
-        # ⚡ УВЕЛИЧИЛ КНОПКУ РЕЖИМА
-        mode_btn_width = self.s(220)  # Было 200 -> 220
-        mode_btn_height = self.s(60)  # Было 50 -> 60
+        mode_btn_width = self.s(220)
+        mode_btn_height = self.s(60)
         self.mode_button = pygame.Rect(
             rect.centerx - mode_btn_width // 2,
             rect.bottom - mode_btn_height - self.s(30),
@@ -666,15 +761,14 @@ class MenuScene(BaseScene):
         pygame.draw.rect(screen, self.colors["button_secondary"], self.mode_button, border_radius=self.s(12))
         pygame.draw.rect(screen, self.colors["text_light"], self.mode_button, self.s(2), border_radius=self.s(12))
         
-        mode_font = self.get_font(20, bold=True)  # Увеличил шрифт
+        mode_font = self.get_font(20, bold=True)
         mode_text = mode_font.render("VS BOT", True, self.colors["text_light"])
         screen.blit(mode_text, (self.mode_button.centerx - mode_text.get_width() // 2,
                               self.mode_button.centery - mode_text.get_height() // 2))
         
         # Кнопка начала боя - внизу справа
-        # ⚡ УВЕЛИЧИЛ КНОПКУ FIGHT
-        btn_width = self.s(200)  # Было 180 -> 200
-        btn_height = self.s(60)  # Было 50 -> 60
+        btn_width = self.s(200)
+        btn_height = self.s(60)
         self.battle_button = pygame.Rect(
             rect.right - btn_width - self.s(50),
             rect.bottom - btn_height - self.s(30),
@@ -690,7 +784,7 @@ class MenuScene(BaseScene):
             pygame.draw.rect(screen, (100, 100, 100), self.battle_button, border_radius=self.s(12))
             pygame.draw.rect(screen, (150, 150, 150), self.battle_button, self.s(3), border_radius=self.s(12))
         
-        btn_font = self.get_font(22, bold=True)  # Увеличил шрифт
+        btn_font = self.get_font(22, bold=True)
         btn_text = btn_font.render("FIGHT!", True, 
                                  self.colors["text_light"] if battle_enabled else self.colors["text_dark"])
         screen.blit(btn_text, (self.battle_button.centerx - btn_text.get_width() // 2,
@@ -754,13 +848,12 @@ class MenuScene(BaseScene):
         if self.selecting_mode or self.show_selection_confirmed:
             card = character["card_special"]
         else:
-            card = character["card_normal"]  # Всегда normal, кроме момента выбора
+            card = character["card_normal"]
             
         card_rect = pygame.Rect(rect.centerx - card_size//2, rect.centery - card_size//2, card_size, card_size)
         screen.blit(card, card_rect)
         
         name_font = self.get_font(22, bold=True)
-        # 🎯 УПРОЩАЕМ: имя всегда одного цвета (не зависит от выбора)
         name_text = name_font.render(character["name"], True, self.colors["text_light"])
         screen.blit(name_text, (rect.centerx - name_text.get_width() // 2, card_rect.bottom + self.s(15)))
         
@@ -790,7 +883,6 @@ class MenuScene(BaseScene):
         btn_height = self.s(45)
         self.char_select_btn = pygame.Rect(rect.centerx - btn_width//2, card_rect.bottom + self.s(60), btn_width, btn_height)
         
-        # 🎯 УПРОЩАЕМ: кнопка всегда "ВЫБРАТЬ" и всегда активна
         if self.show_selection_confirmed:
             btn_color = self.colors["selected"]
             btn_text = self.gm.settings.get_text("selected_button")
@@ -819,7 +911,6 @@ class MenuScene(BaseScene):
             
         hint = hint_font.render(hint_text, True, self.colors["text_dark"])
         screen.blit(hint, (rect.centerx - hint.get_width() // 2, self.char_select_btn.bottom + self.s(15)))
-
     
     def _draw_cameo_section(self, screen, rect):
         """Секция выбора камео - упрощенная логика карточек"""
@@ -837,17 +928,15 @@ class MenuScene(BaseScene):
         cameo = self.cameos[self.selected_cameo]
         card_size = self._get_card_size()
         
-        # 🎯 УПРОЩАЕМ: special карточка ТОЛЬКО во время выбора
         if self.selecting_mode or self.show_selection_confirmed:
             card = cameo["card_special"]
         else:
-            card = cameo["card_normal"]  # Всегда normal, кроме момента выбора
+            card = cameo["card_normal"]
             
         card_rect = pygame.Rect(rect.centerx - card_size//2, rect.centery - card_size//2, card_size, card_size)
         screen.blit(card, card_rect)
         
         name_font = self.get_font(20, bold=True)
-        # 🎯 УПРОЩАЕМ: имя всегда одного цвета (не зависит от выбора)
         name_text = name_font.render(cameo["name"], True, self.colors["text_light"])
         screen.blit(name_text, (rect.centerx - name_text.get_width() // 2, card_rect.bottom + self.s(15)))
         
@@ -877,7 +966,6 @@ class MenuScene(BaseScene):
         btn_height = self.s(45)
         self.cameo_select_btn = pygame.Rect(rect.centerx - btn_width//2, card_rect.bottom + self.s(60), btn_width, btn_height)
         
-        # 🎯 УПРОЩАЕМ: кнопка всегда "ВЫБРАТЬ" и всегда активна
         if self.show_selection_confirmed:
             btn_color = self.colors["selected"]
             btn_text = self.gm.settings.get_text("selected_button")
@@ -906,6 +994,170 @@ class MenuScene(BaseScene):
             
         hint = hint_font.render(hint_text, True, self.colors["text_dark"])
         screen.blit(hint, (rect.centerx - hint.get_width() // 2, self.cameo_select_btn.bottom + self.s(15)))
+    
+    def _draw_skins_section(self, screen, rect):
+        """Секция выбора скинов"""
+        # Определяем текущий выбранный персонаж/камео
+        if self.selected_skin_tab == 0:  # Персонажи
+            selected_char = next((char for char in self.characters if char["selected"]), None)
+            entity_name = selected_char['name'] if selected_char else "NONE"
+            skins_data = self.character_skins.get(selected_char['name'].lower() if selected_char else "", [])
+        else:  # Камео
+            selected_cameo = next((cameo for cameo in self.cameos if cameo["selected"]), None)
+            entity_name = selected_cameo['name'] if selected_cameo else "NONE"
+            skins_data = self.cameo_skins.get(selected_cameo['name'].lower() if selected_cameo else "", [])
+        
+        # Обновляем текущие скины
+        self.current_skins = skins_data
+        
+        title_font = self.get_font(26, bold=True)
+        if self.show_selection_confirmed:
+            title_text = "SKIN SELECTED!"
+        elif self.skin_selecting_mode:
+            title_text = "CONFIRM SKIN SELECTION"
+        else:
+            title_text = f"SKINS: {entity_name}"
+            
+        title = title_font.render(title_text, True, self.colors["text_light"])
+        screen.blit(title, (rect.centerx - title.get_width() // 2, rect.y + self.s(25)))
+        
+        # Таб-переключатель персонаж/камео
+        tab_font = self.get_font(20, bold=True)
+        char_tab_text = tab_font.render("CHARACTERS", True, self.colors["text_light"])
+        cameo_tab_text = tab_font.render("CAMEOS", True, self.colors["text_light"])
+        
+        tab_width = self.s(150)
+        tab_height = self.s(40)
+        tab_spacing = self.s(20)
+        
+        total_tabs_width = tab_width * 2 + tab_spacing
+        tabs_start_x = rect.centerx - total_tabs_width // 2
+        
+        # Таб персонажей
+        char_tab_rect = pygame.Rect(tabs_start_x, rect.y + self.s(70), tab_width, tab_height)
+        char_color = self.colors["button_primary"] if self.selected_skin_tab == 0 else self.colors["header_bg"]
+        pygame.draw.rect(screen, char_color, char_tab_rect, border_radius=self.s(8))
+        pygame.draw.rect(screen, self.colors["text_light"], char_tab_rect, self.s(2), border_radius=self.s(8))
+        screen.blit(char_tab_text, (char_tab_rect.centerx - char_tab_text.get_width() // 2,
+                              char_tab_rect.centery - char_tab_text.get_height() // 2))
+        self.skin_tab_left = char_tab_rect
+        
+        # Таб камео
+        cameo_tab_rect = pygame.Rect(tabs_start_x + tab_width + tab_spacing, rect.y + self.s(70), tab_width, tab_height)
+        cameo_color = self.colors["button_secondary"] if self.selected_skin_tab == 1 else self.colors["header_bg"]
+        pygame.draw.rect(screen, cameo_color, cameo_tab_rect, border_radius=self.s(8))
+        pygame.draw.rect(screen, self.colors["text_light"], cameo_tab_rect, self.s(2), border_radius=self.s(8))
+        screen.blit(cameo_tab_text, (cameo_tab_rect.centerx - cameo_tab_text.get_width() // 2,
+                               cameo_tab_rect.centery - cameo_tab_text.get_height() // 2))
+        self.skin_tab_right = cameo_tab_rect
+        
+        # Отображение скинов
+        if self.current_skins and self.selected_skin_index < len(self.current_skins):
+            skin = self.current_skins[self.selected_skin_index]
+            card_size = self._get_card_size()
+            
+            # Используем специальную карточку для выбора скина
+            if self.skin_selecting_mode or self.show_selection_confirmed:
+                card = self._create_skin_special_card(skin, card_size)
+            else:
+                card = self._create_skin_normal_card(skin, card_size)
+                
+            card_rect = pygame.Rect(rect.centerx - card_size//2, rect.centery - card_size//2, card_size, card_size)
+            screen.blit(card, card_rect)
+            
+            name_font = self.get_font(22, bold=True)
+            name_text = name_font.render(skin["name"], True, self.colors["text_light"])
+            screen.blit(name_text, (rect.centerx - name_text.get_width() // 2, card_rect.bottom + self.s(15)))
+            
+            # Стрелки навигации
+            if not self.skin_selecting_mode and not self.show_selection_confirmed:
+                arrow_size = self.s(50)
+                self.skin_left_btn = pygame.Rect(card_rect.left - arrow_size - self.s(15), card_rect.centery - arrow_size//2, arrow_size, arrow_size)
+                self.skin_right_btn = pygame.Rect(card_rect.right + self.s(15), card_rect.centery - arrow_size//2, arrow_size, arrow_size)
+                
+                pygame.draw.rect(screen, self.colors["button_primary"], self.skin_left_btn, border_radius=self.s(10))
+                pygame.draw.rect(screen, self.colors["text_light"], self.skin_left_btn, self.s(2), border_radius=self.s(10))
+                arrow_font = self.get_font(28, bold=True)
+                left_arrow = arrow_font.render("⟨", True, self.colors["text_light"])
+                screen.blit(left_arrow, (self.skin_left_btn.centerx - left_arrow.get_width() // 2,
+                                    self.skin_left_btn.centery - left_arrow.get_height() // 2))
+                
+                pygame.draw.rect(screen, self.colors["button_primary"], self.skin_right_btn, border_radius=self.s(10))
+                pygame.draw.rect(screen, self.colors["text_light"], self.skin_right_btn, self.s(2), border_radius=self.s(10))
+                right_arrow = arrow_font.render("⟩", True, self.colors["text_light"])
+                screen.blit(right_arrow, (self.skin_right_btn.centerx - right_arrow.get_width() // 2,
+                                        self.skin_right_btn.centery - right_arrow.get_height() // 2))
+        
+        # Кнопка выбора
+        btn_width = min(self.s(180), rect.width * 0.4)
+        btn_height = self.s(45)
+        self.skin_select_btn = pygame.Rect(rect.centerx - btn_width//2, rect.bottom - self.s(100), btn_width, btn_height)
+        
+        if self.show_selection_confirmed:
+            btn_color = self.colors["selected"]
+            btn_text = "SELECTED!"
+        elif self.skin_selecting_mode:
+            btn_color = self.colors["selected"]
+            btn_text = "CONFIRM"
+        else:
+            btn_color = self.colors["button_primary"]
+            btn_text = "SELECT"
+            
+        pygame.draw.rect(screen, btn_color, self.skin_select_btn, border_radius=self.s(8))
+        pygame.draw.rect(screen, self.colors["text_light"], self.skin_select_btn, self.s(2), border_radius=self.s(8))
+        
+        select_font = self.get_font(18, bold=True)
+        select_text = select_font.render(btn_text, True, self.colors["text_light"])
+        screen.blit(select_text, (self.skin_select_btn.centerx - select_text.get_width() // 2,
+                                self.skin_select_btn.centery - select_text.get_height() // 2))
+        
+        hint_font = self.get_font(15)
+        if self.show_selection_confirmed:
+            hint_text = "Returning to Fight section..."
+        elif self.skin_selecting_mode:
+            hint_text = "Press ENTER or click 'Confirm' to select"
+        else:
+            hint_text = "Use A/D, ←→ or click arrows to browse skins"
+            
+        hint = hint_font.render(hint_text, True, self.colors["text_dark"])
+        screen.blit(hint, (rect.centerx - hint.get_width() // 2, self.skin_select_btn.bottom + self.s(15)))
+
+    def _create_skin_normal_card(self, skin, card_size):
+        """Создает обычную карточку скина"""
+        card = pygame.Surface((card_size, card_size), pygame.SRCALPHA)
+        card.fill((100, 100, 180, 255))
+        
+        border = max(3, card_size // 40)
+        pygame.draw.rect(card, (255, 255, 255), (border, border, card_size-2*border, card_size-2*border), border)
+        
+        name_font = pygame.font.SysFont("arial", max(20, card_size//12), bold=True)
+        name_text = name_font.render(skin["name"], True, (255, 255, 255))
+        card.blit(name_text, (card_size//2 - name_text.get_width()//2, card_size//3))
+        
+        type_font = pygame.font.SysFont("arial", max(14, card_size//18))
+        type_text = type_font.render("SKIN", True, (200, 200, 255))
+        card.blit(type_text, (card_size//2 - type_text.get_width()//2, card_size//2))
+        
+        return card
+
+    def _create_skin_special_card(self, skin, card_size):
+        """Создает специальную карточку скина для выбора"""
+        card = pygame.Surface((card_size, card_size), pygame.SRCALPHA)
+        card.fill((180, 150, 50, 255))
+        
+        border = max(3, card_size // 40)
+        pygame.draw.rect(card, (255, 215, 0), (border, border, card_size-2*border, card_size-2*border), border)
+        pygame.draw.rect(card, (100, 255, 100), (border//2, border//2, card_size-border, card_size-border), border//2)
+        
+        name_font = pygame.font.SysFont("arial", max(22, card_size//10), bold=True)
+        name_text = name_font.render(skin["name"], True, (255, 255, 255))
+        card.blit(name_text, (card_size//2 - name_text.get_width()//2, card_size//3))
+        
+        select_font = pygame.font.SysFont("arial", max(16, card_size//15))
+        select_text = select_font.render("SELECT THIS SKIN", True, (100, 255, 100))
+        card.blit(select_text, (card_size//2 - select_text.get_width()//2, card_size//2))
+        
+        return card
     
     def _draw_shop_section(self, screen, rect):
         """Секция магазина"""
@@ -973,7 +1225,7 @@ class MenuScene(BaseScene):
     
     def _draw_bottom_bar(self, screen):
         """Нижняя панель - УДАЛЕНА навигация, оставим только копирайт"""
-        bar_height = self.s(30)  # Уменьшил высоту
+        bar_height = self.s(30)
         bar_rect = pygame.Rect(0, screen.get_height() - bar_height, screen.get_width(), bar_height)
         pygame.draw.rect(screen, self.colors["header_bg"], bar_rect)
         

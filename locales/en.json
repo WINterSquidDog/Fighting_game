@@ -4,6 +4,7 @@
     "FIGHT",
     "CHARACTERS",
     "CAMEOS",
+    "SKINS",
     "SHOP",
     "SETTINGS",
     "EXIT"
@@ -93,5 +94,15 @@
   "selection_confirmed": "✅ Selection confirmed!",
   "placeholder_card": "PLACEHOLDER",
   "special": "SPECIAL",
-  "normal": "NORMAL"
+  "normal": "NORMAL",
+  "skins_section": "SKINS",
+  "character_skins": "CHARACTER SKINS",
+  "cameo_skins": "CAMEOS SKINS",
+  "skin_selected": "SKIN SELECTED!",
+  "confirm_skin": "CONFIRM SKIN SELECTION",
+  "browse_skins": "Use A/D, ←→ or click arrows to browse skins",
+  "select_skin": "SELECT",
+  "skin_for": "SKINS FOR",
+  "characters_tab": "CHARACTERS",
+  "cameos_tab": "CAMEOS"
 }

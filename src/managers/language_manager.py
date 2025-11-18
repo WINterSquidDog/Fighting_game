@@ -44,10 +44,12 @@ class LanguageManager:
             shutil.rmtree(locales_dir)
         os.makedirs(locales_dir)
         
+        # В language_manager.py замените default_translations на этот код:
+
         default_translations = {
             "ru": {
                 "game_title": "BRAWL FIGHTERS",
-                "menu_sections": ["БОЙ", "ПЕРСОНАЖИ", "КАМЕО", "МАГАЗИН", "НАСТРОЙКИ", "ВЫХОД"],
+                "menu_sections": ["БОЙ", "ПЕРСОНАЖИ", "КАМЕО", "СКИНЫ", "МАГАЗИН", "НАСТРОЙКИ", "ВЫХОД"],
                 "battle_mode": "РЕЖИМЫ БОЯ",
                 "select_character": "ВЫБЕРИ ПЕРСОНАЖА",
                 "select_cameo": "ВЫБЕРИ КАМЕО",
@@ -77,7 +79,7 @@ class LanguageManager:
                 "exit": "ВЫЙТИ",
                 "exit_hint": "Нажмите ENTER или кликните для выхода",
                 "navigation": "←→/Клик Навигация",
-                "selection": "ENTER/Клик Выбор",
+                "selection": "ENTER/Клик Выбор", 
                 "browse": "A/D/←→ Просмотр в разделах",
                 "confirm_action": "ENTER Подтвердить выбор",
                 "cancel_action": "ESC Отменить выбор",
@@ -89,7 +91,7 @@ class LanguageManager:
                 "loading_complete": "Запуск игры...",
                 "please_wait": "Идет загрузка, пожалуйста подождите...",
                 "not_selected": "Не выбран",
-                "not_selected_female": "Не выбрано",
+                "not_selected_female": "Не выбрано", 
                 "select_character_title": "ВЫБЕРИ ПЕРСОНАЖА",
                 "select_cameo_title": "ВЫБЕРИ КАМЕО",
                 "confirm_character": "ПОДТВЕРДИТЕ ВЫБОР ПЕРСОНАЖА", 
@@ -134,10 +136,22 @@ class LanguageManager:
                 "placeholder_card": "ЗАГЛУШКА",
                 "special": "SPECIAL",
                 "normal": "NORMAL",
+                
+                # 🔥 НОВЫЕ ПЕРЕВОДЫ ДЛЯ СКИНОВ
+                "skins_section": "СКИНЫ",
+                "character_skins": "СКИНЫ ПЕРСОНАЖЕЙ", 
+                "cameo_skins": "СКИНЫ КАМЕО",
+                "skin_selected": "СКИН ВЫБРАН!",
+                "confirm_skin": "ПОДТВЕРДИТЕ ВЫБОР СКИНА",
+                "browse_skins": "Используйте A/D, ←→ или кликните стрелки для просмотра скинов",
+                "select_skin": "ВЫБРАТЬ",
+                "skin_for": "СКИНЫ ДЛЯ",
+                "characters_tab": "ПЕРСОНАЖИ",
+                "cameos_tab": "КАМЕО"
             },
             "en": {
                 "game_title": "BRAWL FIGHTERS",
-                "menu_sections": ["FIGHT", "CHARACTERS", "CAMEOS", "SHOP", "SETTINGS", "EXIT"],
+                "menu_sections": ["FIGHT", "CHARACTERS", "CAMEOS", "SKINS", "SHOP", "SETTINGS", "EXIT"],
                 "battle_mode": "BATTLE MODES", 
                 "select_character": "SELECT CHARACTER",
                 "select_cameo": "SELECT CAMEOS",
@@ -224,10 +238,22 @@ class LanguageManager:
                 "placeholder_card": "PLACEHOLDER",
                 "special": "SPECIAL",
                 "normal": "NORMAL",
+                
+                # 🔥 NEW SKINS TRANSLATIONS
+                "skins_section": "SKINS",
+                "character_skins": "CHARACTER SKINS", 
+                "cameo_skins": "CAMEOS SKINS",
+                "skin_selected": "SKIN SELECTED!",
+                "confirm_skin": "CONFIRM SKIN SELECTION",
+                "browse_skins": "Use A/D, ←→ or click arrows to browse skins",
+                "select_skin": "SELECT",
+                "skin_for": "SKINS FOR",
+                "characters_tab": "CHARACTERS",
+                "cameos_tab": "CAMEOS"
             },
             "es": {
                 "game_title": "BRAWL FIGHTERS", 
-                "menu_sections": ["LUCHA", "PERSONAJES", "CAMEO", "TIENDA", "AJUSTES", "SALIR"],
+                "menu_sections": ["LUCHA", "PERSONAJES", "CAMEO", "SKINS", "TIENDA", "AJUSTES", "SALIR"],
                 "battle_mode": "MODOS DE LUCHA",
                 "select_character": "SELECCIONAR PERSONAJE",
                 "select_cameo": "SELECCIONAR CAMEO",
@@ -314,6 +340,18 @@ class LanguageManager:
                 "placeholder_card": "MARCADOR",
                 "special": "ESPECIAL",
                 "normal": "NORMAL",
+                
+                # 🔥 NUEVAS TRADUCCIONES PARA SKINS
+                "skins_section": "SKINS",
+                "character_skins": "SKINS DE PERSONAJES", 
+                "cameo_skins": "SKINS DE CAMEO",
+                "skin_selected": "¡SKIN SELECCIONADO!",
+                "confirm_skin": "CONFIRMAR SELECCIÓN DE SKIN",
+                "browse_skins": "Usa A/D, ←→ o haz clic en flechas para navegar skins",
+                "select_skin": "SELECCIONAR",
+                "skin_for": "SKINS PARA",
+                "characters_tab": "PERSONAJES",
+                "cameos_tab": "CAMEO"
             }
         }
         

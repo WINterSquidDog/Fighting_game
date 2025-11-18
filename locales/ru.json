@@ -4,6 +4,7 @@
     "БОЙ",
     "ПЕРСОНАЖИ",
     "КАМЕО",
+    "СКИНЫ",
     "МАГАЗИН",
     "НАСТРОЙКИ",
     "ВЫХОД"
@@ -93,5 +94,15 @@
   "selection_confirmed": "✅ Выбор подтвержден!",
   "placeholder_card": "ЗАГЛУШКА",
   "special": "SPECIAL",
-  "normal": "NORMAL"
+  "normal": "NORMAL",
+  "skins_section": "СКИНЫ",
+  "character_skins": "СКИНЫ ПЕРСОНАЖЕЙ",
+  "cameo_skins": "СКИНЫ КАМЕО",
+  "skin_selected": "СКИН ВЫБРАН!",
+  "confirm_skin": "ПОДТВЕРДИТЕ ВЫБОР СКИНА",
+  "browse_skins": "Используйте A/D, ←→ или кликните стрелки для просмотра скинов",
+  "select_skin": "ВЫБРАТЬ",
+  "skin_for": "СКИНЫ ДЛЯ",
+  "characters_tab": "ПЕРСОНАЖИ",
+  "cameos_tab": "КАМЕО"
 }

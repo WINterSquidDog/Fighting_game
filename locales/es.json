@@ -4,6 +4,7 @@
     "LUCHA",
     "PERSONAJES",
     "CAMEO",
+    "SKINS",
     "TIENDA",
     "AJUSTES",
     "SALIR"
@@ -93,5 +94,15 @@
   "selection_confirmed": "✅ ¡Selección confirmada!",
   "placeholder_card": "MARCADOR",
   "special": "ESPECIAL",
-  "normal": "NORMAL"
+  "normal": "NORMAL",
+  "skins_section": "SKINS",
+  "character_skins": "SKINS DE PERSONAJES",
+  "cameo_skins": "SKINS DE CAMEO",
+  "skin_selected": "¡SKIN SELECCIONADO!",
+  "confirm_skin": "CONFIRMAR SELECCIÓN DE SKIN",
+  "browse_skins": "Usa A/D, ←→ o haz clic en flechas para navegar skins",
+  "select_skin": "SELECCIONAR",
+  "skin_for": "SKINS PARA",
+  "characters_tab": "PERSONAJES",
+  "cameos_tab": "CAMEO"
 }
