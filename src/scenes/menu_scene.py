@@ -371,13 +371,14 @@ class MenuScene(BaseScene):
                             self._refresh_current_skins()
                     elif event.key == pygame.K_RETURN:
                         current_section_name = self.sections[self.current_section]
+                        # ИСПРАВЛЯЕМ проверку настроек - сравниваем с текстом, а не с объектом
                         if current_section_name == self.gm.settings.get_text("settings"):
                             self._open_settings()
-                        elif current_section_name == self.sections[0]:  # БОЙ
+                        elif current_section_name == self.sections[0]:  # БОЙ/FIGHT
                             self._start_battle()
-                        elif current_section_name == self.sections[4]:  # МАГАЗИН
+                        elif current_section_name == self.sections[4]:  # МАГАЗИН/SHOP
                             self._open_shop()
-                        elif current_section_name == self.sections[6]:  # ВЫХОД
+                        elif current_section_name == self.sections[6]:  # ВЫХОД/EXIT
                             self._exit_game()
                             
                     elif self.current_section == 1:  # CHARACTERS
@@ -473,6 +474,17 @@ class MenuScene(BaseScene):
                     self.selected_skin_index = (self.selected_skin_index + 1) % len(self.current_skins)
                 elif self.skin_select_btn and self.skin_select_btn.collidepoint(mouse_pos):
                     self.skin_selecting_mode = True
+
+            elif self.current_section == 5 and hasattr(self, 'settings_button') and self.settings_button and self.settings_button.collidepoint(mouse_pos):
+                self._open_settings()
+                return
+            elif self.current_section == 6 and self.exit_button and self.exit_button.collidepoint(mouse_pos):
+                self._exit_game()
+                return
+            elif self.current_section == 0 and self.battle_button and self.battle_button.collidepoint(mouse_pos):
+                self._start_battle()
+                return
+            
                     
         elif self.selecting_mode:
             # Подтверждение выбора в режиме selecting_mode
@@ -1188,18 +1200,18 @@ class MenuScene(BaseScene):
         title_text = self.gm.settings.get_text("settings")
         title = title_font.render(title_text, True, self.colors["text_light"])
         screen.blit(title, (rect.centerx - title.get_width() // 2, rect.y + self.s(25)))
+        # ДОБАВЛЯЕМ КНОПКУ НАСТРОЕК
+        btn_width = min(self.s(220), rect.width * 0.5)
+        btn_height = self.s(55)
+        self.settings_button = pygame.Rect(rect.centerx - btn_width//2, rect.centery + self.s(80), btn_width, btn_height)
         
-        settings = [
-            self.gm.settings.get_text("sound_effects"),
-            self.gm.settings.get_text("music_tracks"), 
-            self.gm.settings.get_text("screen_mode"),
-            self.gm.settings.get_text("interface_language")
-        ]
+        pygame.draw.rect(screen, self.colors["button_secondary"], self.settings_button, border_radius=self.s(10))
+        pygame.draw.rect(screen, self.colors["text_light"], self.settings_button, self.s(3), border_radius=self.s(10))
         
-        setting_font = self.get_font(20)
-        for i, setting in enumerate(settings):
-            text = setting_font.render(setting, True, self.colors["text_light"])
-            screen.blit(text, (rect.x + self.s(40), rect.y + self.s(70) + i * self.s(50)))
+        btn_font = self.get_font(20, bold=True)
+        btn_text = btn_font.render("OPEN", True, self.colors["text_light"])
+        screen.blit(btn_text, (self.settings_button.centerx - btn_text.get_width() // 2,
+                            self.settings_button.centery - btn_text.get_height() // 2))
     
     def _draw_exit_section(self, screen, rect):
         """Секция выхода"""
