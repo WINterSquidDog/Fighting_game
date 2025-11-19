@@ -104,5 +104,22 @@
   "select_skin": "ВЫБРАТЬ",
   "skin_for": "СКИНЫ ДЛЯ",
   "characters_tab": "ПЕРСОНАЖИ",
-  "cameos_tab": "КАМЕО"
+  "cameos_tab": "КАМЕО",
+  "shop_title": "МАГАЗИН",
+  "shop_coins": "Монеты:",
+  "shop_price": "Цена:",
+  "shop_buy": "КУПИТЬ",
+  "shop_purchased": "КУПЛЕНО",
+  "shop_empty": "Магазин пуст. Зайдите позже!",
+  "shop_insufficient_funds": "Недостаточно монет!",
+  "shop_purchase_success": "Покупка успешна!",
+  "skin_default": "Обычный",
+  "skin_timeless": "Бессмертный",
+  "skin_determined": "Решительный",
+  "skin_builder": "Строитель",
+  "skin_two_faced": "Двуликий",
+  "skin_hacker": "Хакер",
+  "skin_tag_time": "Время тегов",
+  "skin_the_great": "Великий",
+  "skin_lava_guy": "Лавовый парень"
 }

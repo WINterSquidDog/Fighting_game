@@ -97,27 +97,28 @@ class MenuScene(BaseScene):
         # Данные скинов
         self.character_skins = {
             "1x1x1x1": [
-                {"id": "default", "name": "Timeless", "unlocked": True},
-                {"id": "timeless", "name": "Timeless", "unlocked": True}
+                {"id": "default", "name": self.gm.settings.get_text("skin_default"), "unlocked": True},
+                {"id": "timeless", "name": self.gm.settings.get_text("skin_timeless"), "unlocked": True}
             ],
             "chara": [
-                {"id": "default", "name": "Determined", "unlocked": True}
+                {"id": "default", "name": self.gm.settings.get_text("skin_determined"), "unlocked": True}
             ],
             "steve": [
-                {"id": "default", "name": "Builder", "unlocked": True}
+                {"id": "default", "name": self.gm.settings.get_text("skin_builder"), "unlocked": True},
+                {"id": "two_faced", "name": self.gm.settings.get_text("skin_two_faced"), "unlocked": False, "price": 500}
             ]
         }
 
         self.cameo_skins = {
             "c00lk1d": [
-                {"id": "default", "name": "Hacker", "unlocked": True},
-                {"id": "tag_time", "name": "Tag Time", "unlocked": True}
+                {"id": "default", "name": self.gm.settings.get_text("skin_hacker"), "unlocked": True},
+                {"id": "tag_time", "name": self.gm.settings.get_text("skin_tag_time"), "unlocked": True}
             ],
             "papyrus": [
-                {"id": "default", "name": "The Great", "unlocked": True}
+                {"id": "default", "name": self.gm.settings.get_text("skin_the_great"), "unlocked": True}
             ],
             "larry": [
-                {"id": "default", "name": "Lava Guy", "unlocked": True}
+                {"id": "default", "name": self.gm.settings.get_text("skin_lava_guy"), "unlocked": True}
             ]
         }
 
@@ -562,7 +563,7 @@ class MenuScene(BaseScene):
         self.gm.set_scene("settings")
 
     def _open_shop(self):
-        print("Магазин пока не реализован")
+        self.gm.set_scene("shop")
     
     def _exit_game(self):
         pygame.event.post(pygame.event.Event(pygame.QUIT))

@@ -44,8 +44,6 @@ class LanguageManager:
             shutil.rmtree(locales_dir)
         os.makedirs(locales_dir)
         
-        # В language_manager.py замените default_translations на этот код:
-
         default_translations = {
             "ru": {
                 "game_title": "BRAWL FIGHTERS",
@@ -147,7 +145,28 @@ class LanguageManager:
                 "select_skin": "ВЫБРАТЬ",
                 "skin_for": "СКИНЫ ДЛЯ",
                 "characters_tab": "ПЕРСОНАЖИ",
-                "cameos_tab": "КАМЕО"
+                "cameos_tab": "КАМЕО",
+                
+                # 🛒 НОВЫЕ ПЕРЕВОДЫ ДЛЯ МАГАЗИНА
+                "shop_title": "МАГАЗИН",
+                "shop_coins": "Монеты:",
+                "shop_price": "Цена:",
+                "shop_buy": "КУПИТЬ",
+                "shop_purchased": "КУПЛЕНО",
+                "shop_empty": "Магазин пуст. Зайдите позже!",
+                "shop_insufficient_funds": "Недостаточно монет!",
+                "shop_purchase_success": "Покупка успешна!",
+                
+                # 🎨 НАЗВАНИЯ СКИНОВ
+                "skin_default": "Обычный",
+                "skin_timeless": "Бессмертный",
+                "skin_determined": "Решительный",
+                "skin_builder": "Строитель",
+                "skin_two_faced": "Двуликий",
+                "skin_hacker": "Хакер",
+                "skin_tag_time": "Время тегов",
+                "skin_the_great": "Великий",
+                "skin_lava_guy": "Лавовый парень"
             },
             "en": {
                 "game_title": "BRAWL FIGHTERS",
@@ -249,7 +268,28 @@ class LanguageManager:
                 "select_skin": "SELECT",
                 "skin_for": "SKINS FOR",
                 "characters_tab": "CHARACTERS",
-                "cameos_tab": "CAMEOS"
+                "cameos_tab": "CAMEOS",
+                
+                # 🛒 NEW SHOP TRANSLATIONS
+                "shop_title": "SHOP",
+                "shop_coins": "Coins:",
+                "shop_price": "Price:",
+                "shop_buy": "BUY",
+                "shop_purchased": "PURCHASED",
+                "shop_empty": "Shop is empty. Come back later!",
+                "shop_insufficient_funds": "Insufficient funds!",
+                "shop_purchase_success": "Purchase successful!",
+                
+                # 🎨 SKIN NAMES
+                "skin_default": "Default",
+                "skin_timeless": "Timeless",
+                "skin_determined": "Determined",
+                "skin_builder": "Builder",
+                "skin_two_faced": "Two Faced",
+                "skin_hacker": "Hacker",
+                "skin_tag_time": "Tag Time",
+                "skin_the_great": "The Great",
+                "skin_lava_guy": "Lava Guy"
             },
             "es": {
                 "game_title": "BRAWL FIGHTERS", 
@@ -351,7 +391,28 @@ class LanguageManager:
                 "select_skin": "SELECCIONAR",
                 "skin_for": "SKINS PARA",
                 "characters_tab": "PERSONAJES",
-                "cameos_tab": "CAMEO"
+                "cameos_tab": "CAMEO",
+                
+                # 🛒 NUEVAS TRADUCCIONES PARA TIENDA
+                "shop_title": "TIENDA",
+                "shop_coins": "Monedas:",
+                "shop_price": "Precio:",
+                "shop_buy": "COMPRAR",
+                "shop_purchased": "COMPRADO",
+                "shop_empty": "Tienda vacía. ¡Vuelve más tarde!",
+                "shop_insufficient_funds": "¡Fondos insuficientes!",
+                "shop_purchase_success": "¡Compra exitosa!",
+                
+                # 🎨 NOMBRES DE SKINS
+                "skin_default": "Predeterminado",
+                "skin_timeless": "Eterno",
+                "skin_determined": "Determinado",
+                "skin_builder": "Constructor",
+                "skin_two_faced": "Dos Caras",
+                "skin_hacker": "Hacker",
+                "skin_tag_time": "Tiempo de Etiquetas",
+                "skin_the_great": "El Grande",
+                "skin_lava_guy": "Chico de Lava"
             }
         }
         

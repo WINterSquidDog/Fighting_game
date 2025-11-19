@@ -104,5 +104,22 @@
   "select_skin": "SELECT",
   "skin_for": "SKINS FOR",
   "characters_tab": "CHARACTERS",
-  "cameos_tab": "CAMEOS"
+  "cameos_tab": "CAMEOS",
+  "shop_title": "SHOP",
+  "shop_coins": "Coins:",
+  "shop_price": "Price:",
+  "shop_buy": "BUY",
+  "shop_purchased": "PURCHASED",
+  "shop_empty": "Shop is empty. Come back later!",
+  "shop_insufficient_funds": "Insufficient funds!",
+  "shop_purchase_success": "Purchase successful!",
+  "skin_default": "Default",
+  "skin_timeless": "Timeless",
+  "skin_determined": "Determined",
+  "skin_builder": "Builder",
+  "skin_two_faced": "Two Faced",
+  "skin_hacker": "Hacker",
+  "skin_tag_time": "Tag Time",
+  "skin_the_great": "The Great",
+  "skin_lava_guy": "Lava Guy"
 }

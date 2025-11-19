@@ -13,6 +13,8 @@ from src.managers.resource_manager import ResourceManager
 from src.core.input_handler import InputHandler
 from src.managers.language_manager import LanguageManager
 from src.managers.save_manager import SaveManager
+from src.scenes.shop_scene import ShopScene
+
 def main():
     pygame.init()
     pygame.mixer.init()
@@ -54,6 +56,7 @@ def main():
     gm.register_scene("intro", None)
     gm.register_scene("battle", None)
     gm.register_scene("victory", None)
+    gm.register_scene("shop", ShopScene(gm))
 
     # Начинаем с загрузки
     gm.set_scene("loading")

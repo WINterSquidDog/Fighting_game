@@ -104,5 +104,22 @@
   "select_skin": "SELECCIONAR",
   "skin_for": "SKINS PARA",
   "characters_tab": "PERSONAJES",
-  "cameos_tab": "CAMEO"
+  "cameos_tab": "CAMEO",
+  "shop_title": "TIENDA",
+  "shop_coins": "Monedas:",
+  "shop_price": "Precio:",
+  "shop_buy": "COMPRAR",
+  "shop_purchased": "COMPRADO",
+  "shop_empty": "Tienda vacía. ¡Vuelve más tarde!",
+  "shop_insufficient_funds": "¡Fondos insuficientes!",
+  "shop_purchase_success": "¡Compra exitosa!",
+  "skin_default": "Predeterminado",
+  "skin_timeless": "Eterno",
+  "skin_determined": "Determinado",
+  "skin_builder": "Constructor",
+  "skin_two_faced": "Dos Caras",
+  "skin_hacker": "Hacker",
+  "skin_tag_time": "Tiempo de Etiquetas",
+  "skin_the_great": "El Grande",
+  "skin_lava_guy": "Chico de Lava"
 }
