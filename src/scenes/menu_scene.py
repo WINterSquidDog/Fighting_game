@@ -261,6 +261,32 @@ class MenuScene(BaseScene):
                 f"{cameo['name'].lower()}_{skin}_special.jpg", True, card_size
             )
     
+    def _load_character_cards(self, character):
+        """Перезагружает карточки для персонажа с учетом скина"""
+        card_size = self._get_card_size()
+        skin = character["skin"]
+        
+        character["card_normal"] = self._load_card_image(
+            f"{character['name'].lower()}_{skin}_normal.jpg", False, card_size
+        )
+        character["card_special"] = self._load_card_image(
+            f"{character['name'].lower()}_{skin}_special.jpg", True, card_size
+        )
+        print(f"🔄 Перезагружены карточки для {character['name']} с скином {skin}")
+
+    def _load_cameo_cards(self, cameo):
+        """Перезагружает карточки для камео с учетом скина"""
+        card_size = self._get_card_size()
+        skin = cameo["skin"]
+        
+        cameo["card_normal"] = self._load_card_image(
+            f"{cameo['name'].lower()}_{skin}_normal.jpg", False, card_size
+        )
+        cameo["card_special"] = self._load_card_image(
+            f"{cameo['name'].lower()}_{skin}_special.jpg", True, card_size
+        )
+        print(f"🔄 Перезагружены карточки для {cameo['name']} с скином {skin}")
+    
     def _get_card_size(self):
         """Определяем размер карточки в зависимости от разрешения"""
         base_size = 280
@@ -372,14 +398,13 @@ class MenuScene(BaseScene):
                             self._refresh_current_skins()
                     elif event.key == pygame.K_RETURN:
                         current_section_name = self.sections[self.current_section]
-                        # ИСПРАВЛЯЕМ проверку настроек - сравниваем с текстом, а не с объектом
                         if current_section_name == self.gm.settings.get_text("settings"):
                             self._open_settings()
-                        elif current_section_name == self.sections[0]:  # БОЙ/FIGHT
+                        elif current_section_name == self.sections[0]:  # БОЙ
                             self._start_battle()
-                        elif current_section_name == self.sections[4]:  # МАГАЗИН/SHOP
+                        elif current_section_name == self.sections[4]:  # МАГАЗИН
                             self._open_shop()
-                        elif current_section_name == self.sections[6]:  # ВЫХОД/EXIT
+                        elif current_section_name == self.sections[6]:  # ВЫХОД
                             self._exit_game()
                             
                     elif self.current_section == 1:  # CHARACTERS
@@ -443,7 +468,22 @@ class MenuScene(BaseScene):
                 if tab_rect.collidepoint(mouse_pos):
                     self.current_section = i
                     if i == 3:  # SKINS
+                        print(f"🎯 Открываем скины для секции: {i}")
+                        selected_char = next((char for char in self.characters if char["selected"]), None)
+                        if selected_char:
+                            print(f"🎯 Выбранный персонаж: {selected_char['name']}")
+                            print(f"🎯 Ключ для поиска: {selected_char['name'].lower()}")
+                            print(f"🎯 Доступные ключи: {list(self.character_skins.keys())}")
                         self._refresh_current_skins()
+                    elif i == 4:  # SHOP
+                        self._open_shop()
+                        return
+                    elif i == 5:  # SETTINGS
+                        self._open_settings()
+                        return
+                    elif i == 6:  # EXIT
+                        self._exit_game()
+                        return
             
             # Навигация в секциях
             if self.current_section == 1:  # CHARACTERS
@@ -475,17 +515,10 @@ class MenuScene(BaseScene):
                     self.selected_skin_index = (self.selected_skin_index + 1) % len(self.current_skins)
                 elif self.skin_select_btn and self.skin_select_btn.collidepoint(mouse_pos):
                     self.skin_selecting_mode = True
-
-            elif self.current_section == 5 and hasattr(self, 'settings_button') and self.settings_button and self.settings_button.collidepoint(mouse_pos):
-                self._open_settings()
-                return
-            elif self.current_section == 6 and self.exit_button and self.exit_button.collidepoint(mouse_pos):
-                self._exit_game()
-                return
+            
+            # Обработка кнопок в секции FIGHT
             elif self.current_section == 0 and self.battle_button and self.battle_button.collidepoint(mouse_pos):
                 self._start_battle()
-                return
-            
                     
         elif self.selecting_mode:
             # Подтверждение выбора в режиме selecting_mode
@@ -503,11 +536,37 @@ class MenuScene(BaseScene):
         """Обновляет список текущих скинов при смене таба"""
         if self.selected_skin_tab == 0:  # Персонажи
             selected_char = next((char for char in self.characters if char["selected"]), None)
-            self.current_skins = self.character_skins.get(selected_char['name'].lower() if selected_char else "", [])
+            if selected_char:
+                # Защита от регистра и специальных символов
+                char_key = selected_char['name'].lower().strip()
+                # Ищем точное совпадение или по подстроке
+                for key in self.character_skins.keys():
+                    if char_key in key.lower() or key.lower() in char_key:
+                        self.current_skins = self.character_skins[key]
+                        break
+                else:
+                    self.current_skins = []
+                entity_name = selected_char['name']
+            else:
+                self.current_skins = []
+                entity_name = "NONE"
         else:  # Камео
             selected_cameo = next((cameo for cameo in self.cameos if cameo["selected"]), None)
-            self.current_skins = self.cameo_skins.get(selected_cameo['name'].lower() if selected_cameo else "", [])
+            if selected_cameo:
+                cameo_key = selected_cameo['name'].lower().strip()
+                for key in self.cameo_skins.keys():
+                    if cameo_key in key.lower() or key.lower() in cameo_key:
+                        self.current_skins = self.cameo_skins[key]
+                        break
+                else:
+                    self.current_skins = []
+                entity_name = selected_cameo['name']
+            else:
+                self.current_skins = []
+                entity_name = "NONE"
+        
         self.selected_skin_index = 0
+        print(f"🔄 Обновлены скины для: {entity_name}")
 
     def _select_skin(self):
         """Применяет выбранный скин"""
@@ -523,6 +582,9 @@ class MenuScene(BaseScene):
                 # Сохраняем в сохранения
                 self.save_manager.save_game(character_skin=skin["id"])
                 print(f"✅ Применен скин персонажа: {skin['name']}")
+                
+                # ПЕРЕЗАГРУЖАЕМ КАРТОЧКИ С НОВЫМ СКИНОМ
+                self._load_character_cards(selected_char)
         else:  # Камео
             selected_cameo = next((cameo for cameo in self.cameos if cameo["selected"]), None)
             if selected_cameo:
@@ -530,9 +592,9 @@ class MenuScene(BaseScene):
                 # Сохраняем в сохранения
                 self.save_manager.save_game(cameo_skin=skin["id"])
                 print(f"✅ Применен скин камео: {skin['name']}")
-        
-        # Обновляем карточки с новым скином
-        self._load_all_cards()
+                
+                # ПЕРЕЗАГРУЖАЕМ КАРТОЧКИ С НОВЫМ СКИНОМ
+                self._load_cameo_cards(selected_cameo)
         
         self.selection_confirmed_time = pygame.time.get_ticks()
         self.show_selection_confirmed = True
@@ -563,6 +625,8 @@ class MenuScene(BaseScene):
         self.gm.set_scene("settings")
 
     def _open_shop(self):
+        """Открывает магазин"""
+        print("🛒 Открываем магазин...")
         self.gm.set_scene("shop")
     
     def _exit_game(self):
@@ -738,26 +802,30 @@ class MenuScene(BaseScene):
 
     def _draw_fight_section(self, screen, rect):
         """Секция FIGHT - основной экран"""
+        # Показываем выбранные персонаж и камео
         selected_char = next((char for char in self.characters if char["selected"]), None)
         selected_cameo = next((cameo for cameo in self.cameos if cameo["selected"]), None)
         
+        # 🎨 ДОБАВЛЯЕМ АРТЫ ПО ЦЕНТРУ (перекрывающиеся)
         art_size = self.s(350)
         
-        # Арт персонажа с учетом скина
+        # Арт персонажа с учетом ВЫБРАННОГО СКИНА
         if selected_char:
             char_art = self._load_art_image(selected_char["name"], selected_char["skin"], art_size)
             if char_art:
                 char_x = rect.centerx - art_size + self.s(40)
                 char_y = rect.centery - art_size // 2
                 screen.blit(char_art, (char_x, char_y))
+                print(f"🎨 Отрисован арт персонажа: {selected_char['name']} с скином {selected_char['skin']}")
         
-        # Арт камео с учетом скина
+        # Арт камео с учетом ВЫБРАННОГО СКИНА
         if selected_cameo:
             cameo_art = self._load_art_image(selected_cameo["name"], selected_cameo["skin"], art_size)
             if cameo_art:
                 cameo_x = rect.centerx - self.s(40)
                 cameo_y = rect.centery - art_size // 2
                 screen.blit(cameo_art, (cameo_x, cameo_y))
+                print(f"🎨 Отрисован арт камео: {selected_cameo['name']} с скином {selected_cameo['skin']}")
         
         # Кнопка выбора режима (нерабочая) - внизу по центру
         mode_btn_width = self.s(220)
@@ -803,14 +871,14 @@ class MenuScene(BaseScene):
 
     def _load_art_image(self, entity_name, skin_id, art_size):
         """Загрузка арта с учетом скина"""
-        # Формируем путь: Sprites/arts/[entity]/[skin].png
+        # Сначала пробуем путь с конкретным скином
         art_path = os.path.join("Sprites", "arts", entity_name.lower(), f"{skin_id}.png")
         
         # Если арт для скина не найден, пробуем default
         if not os.path.exists(art_path):
             art_path = os.path.join("Sprites", "arts", entity_name.lower(), "default.png")
         
-        # Если default тоже не найден, пробуем корневой арт
+        # Если default тоже не найден, пробуем корневой арт (старый путь)
         if not os.path.exists(art_path):
             art_path = os.path.join("Sprites", "arts", f"{entity_name.lower()}.png")
         
@@ -822,8 +890,10 @@ class MenuScene(BaseScene):
                 new_width = int(original_width * scale_factor)
                 new_height = int(original_height * scale_factor)
                 art = pygame.transform.scale(art, (new_width, new_height))
+                print(f"🎨 Загружен арт: {art_path}")
                 return art
             else:
+                print(f"⚠️ Арт не найден: {art_path}")
                 return self._create_placeholder_art(entity_name, art_size)
         except Exception as e:
             print(f"❌ Ошибка загрузки арта {art_path}: {e}")
@@ -1021,29 +1091,29 @@ class MenuScene(BaseScene):
             selected_char = next((char for char in self.characters if char["selected"]), None)
             entity_name = selected_char['name'] if selected_char else "NONE"
             skins_data = self.character_skins.get(selected_char['name'].lower() if selected_char else "", [])
+            title_text = f"{self.gm.settings.get_text('skin_for')}: {entity_name}"
         else:  # Камео
             selected_cameo = next((cameo for cameo in self.cameos if cameo["selected"]), None)
             entity_name = selected_cameo['name'] if selected_cameo else "NONE"
             skins_data = self.cameo_skins.get(selected_cameo['name'].lower() if selected_cameo else "", [])
+            title_text = f"{self.gm.settings.get_text('skin_for')}: {entity_name}"
         
         # Обновляем текущие скины
         self.current_skins = skins_data
         
         title_font = self.get_font(26, bold=True)
         if self.show_selection_confirmed:
-            title_text = "SKIN SELECTED!"
+            title_text = self.gm.settings.get_text("skin_selected")
         elif self.skin_selecting_mode:
-            title_text = "CONFIRM SKIN SELECTION"
-        else:
-            title_text = f"SKINS: {entity_name}"
+            title_text = self.gm.settings.get_text("confirm_skin")
             
         title = title_font.render(title_text, True, self.colors["text_light"])
         screen.blit(title, (rect.centerx - title.get_width() // 2, rect.y + self.s(25)))
         
         # Таб-переключатель персонаж/камео
         tab_font = self.get_font(20, bold=True)
-        char_tab_text = tab_font.render("CHARACTERS", True, self.colors["text_light"])
-        cameo_tab_text = tab_font.render("CAMEOS", True, self.colors["text_light"])
+        char_tab_text = tab_font.render(self.gm.settings.get_text("characters_tab"), True, self.colors["text_light"])
+        cameo_tab_text = tab_font.render(self.gm.settings.get_text("cameos_tab"), True, self.colors["text_light"])
         
         tab_width = self.s(150)
         tab_height = self.s(40)
@@ -1185,15 +1255,29 @@ class MenuScene(BaseScene):
         title = title_font.render(title_text, True, self.colors["text_light"])
         screen.blit(title, (rect.centerx - title.get_width() // 2, rect.y + self.s(25)))
         
-        placeholder_font = self.get_font(22)
-        placeholder_text = self.gm.settings.get_text("shop_coming_soon")
-        placeholder = placeholder_font.render(placeholder_text, True, self.colors["text_dark"])
-        screen.blit(placeholder, (rect.centerx - placeholder.get_width() // 2, rect.centery - self.s(15)))
+        # Кнопка открытия магазина
+        btn_width = self.s(200)
+        btn_height = self.s(60)
+        self.shop_button = pygame.Rect(
+            rect.centerx - btn_width // 2,
+            rect.centery - btn_height // 2,
+            btn_width,
+            btn_height
+        )
         
-        offer_font = self.get_font(18)
-        offer_text = self.gm.settings.get_text("earn_coins_hint")
-        offer = offer_font.render(offer_text, True, (255, 200, 100))
-        screen.blit(offer, (rect.centerx - offer.get_width() // 2, rect.centery + self.s(25)))
+        pygame.draw.rect(screen, self.colors["button_primary"], self.shop_button, border_radius=self.s(12))
+        pygame.draw.rect(screen, self.colors["text_light"], self.shop_button, self.s(2), border_radius=self.s(12))
+        
+        btn_font = self.get_font(20, bold=True)
+        btn_text = btn_font.render("OPEN SHOP", True, self.colors["text_light"])
+        screen.blit(btn_text, (self.shop_button.centerx - btn_text.get_width() // 2,
+                         self.shop_button.centery - btn_text.get_height() // 2))
+        
+        # Подсказка
+        hint_font = self.get_font(16)
+        hint_text = "Click to open the shop"
+        hint = hint_font.render(hint_text, True, self.colors["text_dark"])
+        screen.blit(hint, (rect.centerx - hint.get_width() // 2, self.shop_button.bottom + self.s(20)))
     
     def _draw_settings_section(self, screen, rect):
         """Секция настроек"""
@@ -1201,18 +1285,24 @@ class MenuScene(BaseScene):
         title_text = self.gm.settings.get_text("settings")
         title = title_font.render(title_text, True, self.colors["text_light"])
         screen.blit(title, (rect.centerx - title.get_width() // 2, rect.y + self.s(25)))
-        # ДОБАВЛЯЕМ КНОПКУ НАСТРОЕК
-        btn_width = min(self.s(220), rect.width * 0.5)
-        btn_height = self.s(55)
-        self.settings_button = pygame.Rect(rect.centerx - btn_width//2, rect.centery + self.s(80), btn_width, btn_height)
         
-        pygame.draw.rect(screen, self.colors["button_secondary"], self.settings_button, border_radius=self.s(10))
-        pygame.draw.rect(screen, self.colors["text_light"], self.settings_button, self.s(3), border_radius=self.s(10))
+        # Кнопка открытия настроек
+        btn_width = self.s(200)
+        btn_height = self.s(60)
+        self.settings_button = pygame.Rect(
+            rect.centerx - btn_width // 2,
+            rect.centery - btn_height // 2,
+            btn_width,
+            btn_height
+        )
+        
+        pygame.draw.rect(screen, self.colors["button_secondary"], self.settings_button, border_radius=self.s(12))
+        pygame.draw.rect(screen, self.colors["text_light"], self.settings_button, self.s(2), border_radius=self.s(12))
         
         btn_font = self.get_font(20, bold=True)
-        btn_text = btn_font.render("OPEN", True, self.colors["text_light"])
+        btn_text = btn_font.render("OPEN SETTINGS", True, self.colors["text_light"])
         screen.blit(btn_text, (self.settings_button.centerx - btn_text.get_width() // 2,
-                            self.settings_button.centery - btn_text.get_height() // 2))
+                         self.settings_button.centery - btn_text.get_height() // 2))
     
     def _draw_exit_section(self, screen, rect):
         """Секция выхода"""

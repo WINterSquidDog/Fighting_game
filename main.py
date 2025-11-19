@@ -14,6 +14,7 @@ from src.core.input_handler import InputHandler
 from src.managers.language_manager import LanguageManager
 from src.managers.save_manager import SaveManager
 from src.scenes.shop_scene import ShopScene
+from src.managers.skin_manager import SkinManager
 
 def main():
     pygame.init()
@@ -43,12 +44,14 @@ def main():
     resources = ResourceManager()
     input_handler = InputHandler()
     save_manager = SaveManager()
+    skin_manager = SkinManager()
 
     # Game manager с настройками
     gm = GameManager(resources, input_handler)
     gm.settings = settings_manager
     gm.screen = screen
     gm.save_manager = save_manager
+    gm.skin_manager = skin_manager
     # Регистрируем сцены
     gm.register_scene("loading", LoadingScene(gm))
     gm.register_scene("menu", MenuScene(gm))

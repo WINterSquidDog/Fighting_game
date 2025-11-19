@@ -190,3 +190,7 @@ class ShopScene(BaseScene):
         empty_text = empty_font.render("Магазин пуст. Зайдите позже!", True, self.colors["text_dark"])
         screen.blit(empty_text, (screen.get_width() // 2 - empty_text.get_width() // 2,
                                screen.get_height() // 2 - empty_text.get_height() // 2))
+    
+    def on_enter(self):
+        print("🎮 Магазин открыт!")
+        self._update_items_status()
