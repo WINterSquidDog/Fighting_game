@@ -725,24 +725,22 @@ class MenuScene(BaseScene):
 
     def _draw_fight_section(self, screen, rect):
         """Секция FIGHT - основной экран"""
-        # Показываем выбранные персонаж и камео
         selected_char = next((char for char in self.characters if char["selected"]), None)
         selected_cameo = next((cameo for cameo in self.cameos if cameo["selected"]), None)
         
-        # 🎨 ДОБАВЛЯЕМ АРТЫ ПО ЦЕНТРУ (перекрывающиеся)
         art_size = self.s(350)
         
-        # Арт персонажа (слева, немного перекрывает камео)
+        # Арт персонажа с учетом скина
         if selected_char:
-            char_art = self._load_art_image(f"{selected_char['name'].lower()}.png", art_size)
+            char_art = self._load_art_image(selected_char["name"], selected_char["skin"], art_size)
             if char_art:
                 char_x = rect.centerx - art_size + self.s(40)
                 char_y = rect.centery - art_size // 2
                 screen.blit(char_art, (char_x, char_y))
         
-        # Арт камео (справа, перекрывает персонажа)
+        # Арт камео с учетом скина
         if selected_cameo:
-            cameo_art = self._load_art_image(f"{selected_cameo['name'].lower()}.png", art_size)
+            cameo_art = self._load_art_image(selected_cameo["name"], selected_cameo["skin"], art_size)
             if cameo_art:
                 cameo_x = rect.centerx - self.s(40)
                 cameo_y = rect.centery - art_size // 2
@@ -790,14 +788,22 @@ class MenuScene(BaseScene):
         screen.blit(btn_text, (self.battle_button.centerx - btn_text.get_width() // 2,
                              self.battle_button.centery - btn_text.get_height() // 2))
 
-    def _load_art_image(self, filename, art_size):
-        """Загрузка арта с указанным размером"""
-        art_path = os.path.join("Sprites", "arts", filename)
+    def _load_art_image(self, entity_name, skin_id, art_size):
+        """Загрузка арта с учетом скина"""
+        # Формируем путь: Sprites/arts/[entity]/[skin].png
+        art_path = os.path.join("Sprites", "arts", entity_name.lower(), f"{skin_id}.png")
+        
+        # Если арт для скина не найден, пробуем default
+        if not os.path.exists(art_path):
+            art_path = os.path.join("Sprites", "arts", entity_name.lower(), "default.png")
+        
+        # Если default тоже не найден, пробуем корневой арт
+        if not os.path.exists(art_path):
+            art_path = os.path.join("Sprites", "arts", f"{entity_name.lower()}.png")
         
         try:
             if os.path.exists(art_path):
                 art = pygame.image.load(art_path).convert_alpha()
-                # Масштабируем сохраняя пропорции
                 original_width, original_height = art.get_size()
                 scale_factor = min(art_size / original_width, art_size / original_height)
                 new_width = int(original_width * scale_factor)
@@ -805,10 +811,10 @@ class MenuScene(BaseScene):
                 art = pygame.transform.scale(art, (new_width, new_height))
                 return art
             else:
-                return self._create_placeholder_art(filename, art_size)
+                return self._create_placeholder_art(entity_name, art_size)
         except Exception as e:
             print(f"❌ Ошибка загрузки арта {art_path}: {e}")
-            return self._create_placeholder_art(filename, art_size)
+            return self._create_placeholder_art(entity_name, art_size)
 
     def _create_placeholder_art(self, filename, art_size):
         """Создание заглушки для арта"""
