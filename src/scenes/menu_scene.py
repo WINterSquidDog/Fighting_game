@@ -205,7 +205,9 @@ class MenuScene(BaseScene):
         """Выбор персонажа - можно выбирать одного и того же повторно"""
         selected_char = self.characters[self.selected_character]
         selected_char["selected"] = True
-        
+        for char in self.characters:
+            if char != self.characters[self.selected_character]:
+                char["selected"] = False
         print(f"🎯 Начинаем сохранение персонажа: {selected_char['name']}")
         
         # Сохраняем выбор
@@ -215,6 +217,7 @@ class MenuScene(BaseScene):
         )
         
         print(f"✅ Выбран и сохранен персонаж: {selected_char['name']}")
+        print(self.characters)
         self.selection_confirmed_time = pygame.time.get_ticks()
         self.show_selection_confirmed = True
         self.selecting_mode = False
@@ -225,7 +228,9 @@ class MenuScene(BaseScene):
         selected_cameo["selected"] = True
         
         print(f"🎯 Начинаем сохранение камео: {selected_cameo['name']}")
-        
+        for char in self.cameos:
+            if char != self.cameos[self.selected_cameo]:
+                char["selected"] = False
         # Сохраняем выбор
         self.save_manager.save_game(
             cameo=selected_cameo["name"],  # Сохраняем именно имя
@@ -816,7 +821,6 @@ class MenuScene(BaseScene):
                 char_x = rect.centerx - art_size + self.s(40)
                 char_y = rect.centery - art_size // 2
                 screen.blit(char_art, (char_x, char_y))
-                print(f"🎨 Отрисован арт персонажа: {selected_char['name']} с скином {selected_char['skin']}")
         
         # Арт камео с учетом ВЫБРАННОГО СКИНА
         if selected_cameo:
@@ -825,7 +829,6 @@ class MenuScene(BaseScene):
                 cameo_x = rect.centerx - self.s(40)
                 cameo_y = rect.centery - art_size // 2
                 screen.blit(cameo_art, (cameo_x, cameo_y))
-                print(f"🎨 Отрисован арт камео: {selected_cameo['name']} с скином {selected_cameo['skin']}")
         
         # Кнопка выбора режима (нерабочая) - внизу по центру
         mode_btn_width = self.s(220)
@@ -890,10 +893,8 @@ class MenuScene(BaseScene):
                 new_width = int(original_width * scale_factor)
                 new_height = int(original_height * scale_factor)
                 art = pygame.transform.scale(art, (new_width, new_height))
-                print(f"🎨 Загружен арт: {art_path}")
                 return art
             else:
-                print(f"⚠️ Арт не найден: {art_path}")
                 return self._create_placeholder_art(entity_name, art_size)
         except Exception as e:
             print(f"❌ Ошибка загрузки арта {art_path}: {e}")
