@@ -232,58 +232,61 @@ class MenuScene(BaseScene):
         self.selecting_mode = False
 
     def _load_all_cards(self):
-        """Загружаем все карточки с учетом скинов"""
+        """Загружаем все карточки с учетом скинов - ИСПРАВЛЕНА ЗАГРУЗКА КАМЕО"""
         card_size = self._get_card_size()
         
-        for i in self.character_skins.keys():
-            # Загружаем карточки с учетом скина
-            character = self.character_skins[i]
+        # Загружаем карточки персонажей
+        for char_key in self.character_skins.keys():
+            character = self.character_skins[char_key]
             for skin in character.keys():
                 character[skin]["card_normal"] = self._load_card_image(
-                    f"{i.lower()}_{skin}_normal.jpg", False, card_size
+                    f"{char_key}_{skin}_normal.jpg", False, card_size
                 )
                 character[skin]["card_special"] = self._load_card_image(
-                    f"{i.lower()}_{skin}_special.jpg", True, card_size
+                    f"{char_key}_{skin}_special.jpg", True, card_size
                 )
-        print(self.character_skins)
+        print("🃏 Загружены карточки персонажей:", self.character_skins)
+        
+        # ЗАГРУЖАЕМ КАРТОЧКИ КАМЕО - ЭТО БЫЛО ПРОПУЩЕНО!
+        for cameo_key in self.cameo_skins.keys():
+            cameo = self.cameo_skins[cameo_key]
+            for skin in cameo.keys():
+                cameo[skin]["card_normal"] = self._load_card_image(
+                    f"{cameo_key}_{skin}_normal.jpg", False, card_size
+                )
+                cameo[skin]["card_special"] = self._load_card_image(
+                    f"{cameo_key}_{skin}_special.jpg", True, card_size
+                )
+        print("🃏 Загружены карточки камео:", self.cameo_skins)
             
+        # Также загружаем текущие карточки для отображения в основных разделах
         for cameo in self.cameos:
-            # Загружаем карточки с учетом скина
+            cameo_key = cameo["name"].lower()
             skin = cameo["skin"]
-            cameo["card_normal"] = self._load_card_image(
-                f"{cameo['name'].lower()}_{skin}_normal.jpg", False, card_size
-            )
-            cameo["card_special"] = self._load_card_image(
-                f"{cameo['name'].lower()}_{skin}_special.jpg", True, card_size
-            )
+            if cameo_key in self.cameo_skins and skin in self.cameo_skins[cameo_key]:
+                cameo["card_normal"] = self.cameo_skins[cameo_key][skin]["card_normal"]
+                cameo["card_special"] = self.cameo_skins[cameo_key][skin]["card_special"]
     
     def _load_character_cards(self, character):
         """Перезагружает карточки для персонажа с учетом скина"""
-        card_size = self._get_card_size()
+        char_key = character["name"].lower()
+        skin = character["skin"]
         
-        for i in self.character_skins.keys():
-            # Загружаем карточки с учетом скина
-            character = self.character_skins[i]
-            for skin in character.keys():
-                character[skin]["card_normal"] = self._load_card_image(
-                    f"{i.lower()}_{skin}_normal.jpg", False, card_size
-                )
-                character[skin]["card_special"] = self._load_card_image(
-                    f"{i.lower()}_{skin}_special.jpg", True, card_size
-                )
+        if char_key in self.character_skins and skin in self.character_skins[char_key]:
+            character["card_normal"] = self.character_skins[char_key][skin]["card_normal"]
+            character["card_special"] = self.character_skins[char_key][skin]["card_special"]
+        
         print(f"🔄 Перезагружены карточки для {character['name']} с скином {skin}")
 
     def _load_cameo_cards(self, cameo):
         """Перезагружает карточки для камео с учетом скина"""
-        card_size = self._get_card_size()
+        cameo_key = cameo["name"].lower()
         skin = cameo["skin"]
         
-        cameo["card_normal"] = self._load_card_image(
-            f"{cameo['name'].lower()}_{skin}_normal.jpg", False, card_size
-        )
-        cameo["card_special"] = self._load_card_image(
-            f"{cameo['name'].lower()}_{skin}_special.jpg", True, card_size
-        )
+        if cameo_key in self.cameo_skins and skin in self.cameo_skins[cameo_key]:
+            cameo["card_normal"] = self.cameo_skins[cameo_key][skin]["card_normal"]
+            cameo["card_special"] = self.cameo_skins[cameo_key][skin]["card_special"]
+        
         print(f"🔄 Перезагружены карточки для {cameo['name']} с скином {skin}")
     
     def _get_card_size(self):
@@ -304,6 +307,7 @@ class MenuScene(BaseScene):
             if os.path.exists(card_path):
                 card = pygame.image.load(card_path).convert_alpha()
                 card = pygame.transform.scale(card, (card_size, card_size))
+                print(f"✅ Загружена карточка: {card_path}")
                 return card
             else:
                 print(f"⚠️ Карточка не найдена: {card_path}")
@@ -556,6 +560,8 @@ class MenuScene(BaseScene):
             selected_cameo = next((cameo for cameo in self.cameos if cameo["selected"]), None)
             if selected_cameo:
                 cameo_key = selected_cameo['name'].lower().strip()
+                print(f"🔍 Ищем скины для камео: '{cameo_key}' в {list(self.cameo_skins.keys())}")
+                
                 if cameo_key in self.cameo_skins:
                     skins_dict = self.cameo_skins[cameo_key]
                     for skin_id, skin_data in skins_dict.items():
@@ -584,9 +590,11 @@ class MenuScene(BaseScene):
             for i, skin in enumerate(self.current_skins):
                 if skin["id"] == current_skin_id:
                     self.selected_skin_index = i
+                    print(f"🎯 Установлен индекс {i} для текущего скина {current_skin_id}")
                     break
             else:
                 self.selected_skin_index = 0  # fallback
+                print(f"⚠️ Текущий скин {current_skin_id} не найден в списке, установлен индекс 0")
         
         print(f"🎯 Текущий индекс скина: {self.selected_skin_index}, всего скинов: {len(self.current_skins)}")
 
