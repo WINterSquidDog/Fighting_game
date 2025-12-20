@@ -34,7 +34,7 @@ class LoadingScene(BaseScene):
     def _load_logo(self):
         """Загружаем логотип"""
         try:
-            logo_path = os.path.join("Sprites", "arts", "logo.png")
+            logo_path = os.path.join("Sprites", "arts", "logo.jpg")
             if os.path.exists(logo_path):
                 screen_width, screen_height = self.gm.screen.get_size()
                 self.logo_image = pygame.image.load(logo_path).convert_alpha()
