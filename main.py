@@ -15,6 +15,8 @@ from src.managers.language_manager import LanguageManager
 from src.managers.save_manager import SaveManager
 from src.scenes.shop_scene import ShopScene
 from src.managers.skin_manager import SkinManager
+from src.scenes.shop_scene import ShopScene
+
 
 def main():
     pygame.init()

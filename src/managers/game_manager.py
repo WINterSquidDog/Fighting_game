@@ -108,6 +108,10 @@ class GameManager:
         if self.active_scene:
             self.active_scene.update(dt)
 
+    def get_scene(self, scene_name):
+        """Возвращает сцену по имени"""
+        return self.scenes.get(scene_name)
+
     def draw(self, surface):
         if self.active_scene:
             self.active_scene.draw(surface)

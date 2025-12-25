@@ -48,7 +48,7 @@ class MenuScene(BaseScene):
                 "skin": "default"
             },
             {
-                "name": "Chara", 
+                "name": "chara",  # строчными буквами для единообразия
                 "card_normal": None,
                 "card_special": None,
                 "description": "",
@@ -56,7 +56,7 @@ class MenuScene(BaseScene):
                 "skin": "default"
             },
             {
-                "name": "Steve",
+                "name": "steve",  # строчными буквами для единообразия
                 "card_normal": None,
                 "card_special": None,
                 "description": "",
@@ -65,22 +65,24 @@ class MenuScene(BaseScene):
             }
         ]
         
-        # Камео с карточками
+        # Камео с карточками (все строчными буквами)
         self.selected_cameo = 0
         self.cameos = [
             {
-                "name": "C00lK1D",
+                "name": "c00lk1d",  # строчными буквами
                 "description": "",
                 "selected": False,
-                "skin": "default"
+                "skin": "default",
+                "card_normal": None,
+                "card_special": None
             },
             {
-                "name": "Papyrus",
-                "card_normal": None,
-                "card_special": None,
+                "name": "papyrus",  # строчными буквами
                 "description": "",
                 "selected": False,
-                "skin": "default"
+                "skin": "default",
+                "card_normal": None,
+                "card_special": None
             },
         ]
 
@@ -96,11 +98,11 @@ class MenuScene(BaseScene):
             },
             "steve": {
                 "default": {"name": self.gm.settings.get_text("skin_default"), "unlocked": True, "card_normal": None, "card_special": None},
-                "two_faced": {"name": self.gm.settings.get_text("skin_two_faced"), "unlocked": False, "price": 500, "card_normal": None, "card_special": None}
+                "void_god": {"name": self.gm.settings.get_text("skin_two_faced"), "unlocked": False, "price": 500, "card_normal": None, "card_special": None}
             }
         }
 
-        # ОБНОВЛЕННАЯ СТРУКТУРА ДЛЯ КАМЕО
+        # ОБНОВЛЕННАЯ СТРУКТУРА ДЛЯ КАМЕО (все строчными буквами)
         self.cameo_skins = {
             "c00lk1d": {
                 "default": {"name": self.gm.settings.get_text("skin_default"), "unlocked": True, "card_normal": None, "card_special": None},
@@ -146,11 +148,22 @@ class MenuScene(BaseScene):
         self._refresh_texts()
         self.music_started = False
         
+        # Переменные для анимации
+        self.unlock_animation = False
+        self.unlock_animation_time = 0
+        self.unlock_animation_skin = None
+        
     def on_enter(self):
         """Загружаем карточки и восстанавливаем последний выбор"""
         self._load_all_cards()
         self._play_background_music()
         self._restore_last_selection()
+        
+        # ОБНОВЛЯЕМ ДАННЫЕ ИГРОКА ИЗ СОХРАНЕНИЙ
+        self.save_manager.load_save()  # Перезагружаем сохранения
+        self.player_data["coins"] = self.save_manager.get_coins()
+        self.player_data["trophies"] = self.save_manager.get_trophies()
+        print(f"💰 Данные игрока обновлены: {self.player_data['coins']} монет, {self.player_data['trophies']} трофеев")
 
     def _restore_last_selection(self):
         """Восстанавливает последний выбор персонажей из сохранения"""
@@ -159,7 +172,7 @@ class MenuScene(BaseScene):
         
         print(f"🔍 Восстановление: персонаж='{last_char}', камео='{last_cameo}'")
         
-        # Находим индексы последних выбранных персонажей
+        # Находим индексы последних выбранных персонажей (все в нижнем регистре для сравнения)
         char_found = False
         for i, char in enumerate(self.characters):
             if char["name"].lower() == last_char.lower():
@@ -235,56 +248,67 @@ class MenuScene(BaseScene):
         """Загружаем все карточки с учетом скинов"""
         card_size = self._get_card_size()
         
-        for i in self.character_skins.keys():
-            # Загружаем карточки с учетом скина
-            character = self.character_skins[i]
-            for skin in character.keys():
-                character[skin]["card_normal"] = self._load_card_image(
-                    f"{i.lower()}_{skin}_normal.jpg", False, card_size
+        # Загружаем карточки персонажей
+        for char_name in self.character_skins.keys():
+            for skin_id in self.character_skins[char_name].keys():
+                skin_data = self.character_skins[char_name][skin_id]
+                skin_data["card_normal"] = self._load_card_image(
+                    f"{char_name}_{skin_id}_normal.jpg", False, card_size
                 )
-                character[skin]["card_special"] = self._load_card_image(
-                    f"{i.lower()}_{skin}_special.jpg", True, card_size
+                skin_data["card_special"] = self._load_card_image(
+                    f"{char_name}_{skin_id}_special.jpg", True, card_size
                 )
         print(self.character_skins)
-            
+        
+        # Загружаем карточки камео - ИСПРАВЛЕННЫЙ КОД
+        for cameo_name in self.cameo_skins.keys():
+            for skin_id in self.cameo_skins[cameo_name].keys():
+                skin_data = self.cameo_skins[cameo_name][skin_id]
+                skin_data["card_normal"] = self._load_card_image(
+                    f"{cameo_name}_{skin_id}_normal.jpg", False, card_size
+                )
+                skin_data["card_special"] = self._load_card_image(
+                    f"{cameo_name}_{skin_id}_special.jpg", True, card_size
+                )
+        
+        # Также загружаем дефолтные карточки для cameos (для совместимости)
         for cameo in self.cameos:
-            # Загружаем карточки с учетом скина
-            skin = cameo["skin"]
-            cameo["card_normal"] = self._load_card_image(
-                f"{cameo['name'].lower()}_{skin}_normal.jpg", False, card_size
-            )
-            cameo["card_special"] = self._load_card_image(
-                f"{cameo['name'].lower()}_{skin}_special.jpg", True, card_size
-            )
+            cameo_key = cameo['name'].lower()
+            if cameo_key in self.cameo_skins:
+                default_skin = "default"
+                if default_skin in self.cameo_skins[cameo_key]:
+                    cameo["card_normal"] = self.cameo_skins[cameo_key][default_skin]["card_normal"]
+                    cameo["card_special"] = self.cameo_skins[cameo_key][default_skin]["card_special"]
     
     def _load_character_cards(self, character):
         """Перезагружает карточки для персонажа с учетом скина"""
-        card_size = self._get_card_size()
+        char_key = character['name'].lower()
+        skin_id = character["skin"]
         
-        for i in self.character_skins.keys():
-            # Загружаем карточки с учетом скина
-            character = self.character_skins[i]
-            for skin in character.keys():
-                character[skin]["card_normal"] = self._load_card_image(
-                    f"{i.lower()}_{skin}_normal.jpg", False, card_size
-                )
-                character[skin]["card_special"] = self._load_card_image(
-                    f"{i.lower()}_{skin}_special.jpg", True, card_size
-                )
-        print(f"🔄 Перезагружены карточки для {character['name']} с скином {skin}")
+        if char_key in self.character_skins and skin_id in self.character_skins[char_key]:
+            skin_data = self.character_skins[char_key][skin_id]
+            
+            # Просто присваиваем уже загруженные карточки
+            character["card_normal"] = skin_data["card_normal"]
+            character["card_special"] = skin_data["card_special"]
+            print(f"🔄 Перезагружены карточки для {character['name']} с скином {skin_id}")
+        else:
+            print(f"⚠️ Не найден скин {skin_id} для персонажа {character['name']}")
 
     def _load_cameo_cards(self, cameo):
         """Перезагружает карточки для камео с учетом скина"""
-        card_size = self._get_card_size()
-        skin = cameo["skin"]
+        cameo_key = cameo['name'].lower()
+        skin_id = cameo["skin"]
         
-        cameo["card_normal"] = self._load_card_image(
-            f"{cameo['name'].lower()}_{skin}_normal.jpg", False, card_size
-        )
-        cameo["card_special"] = self._load_card_image(
-            f"{cameo['name'].lower()}_{skin}_special.jpg", True, card_size
-        )
-        print(f"🔄 Перезагружены карточки для {cameo['name']} с скином {skin}")
+        if cameo_key in self.cameo_skins and skin_id in self.cameo_skins[cameo_key]:
+            skin_data = self.cameo_skins[cameo_key][skin_id]
+            
+            # Просто присваиваем уже загруженные карточки
+            cameo["card_normal"] = skin_data["card_normal"]
+            cameo["card_special"] = skin_data["card_special"]
+            print(f"🔄 Перезагружены карточки для {cameo['name']} с скином {skin_id}")
+        else:
+            print(f"⚠️ Не найден скин {skin_id} для камео {cameo['name']}")
     
     def _get_card_size(self):
         """Определяем размер карточки в зависимости от разрешения"""
@@ -527,7 +551,7 @@ class MenuScene(BaseScene):
                 self._select_skin()
     
     def _refresh_current_skins(self):
-        """Обновляет список текущих скинов при смене таба - ПОЛНОСТЬЮ ПЕРЕПИСАН"""
+        """Обновляет список текущих скинов при смене таба"""
         self.current_skins = []
         
         if self.selected_skin_tab == 0:  # Персонажи
@@ -556,6 +580,8 @@ class MenuScene(BaseScene):
             selected_cameo = next((cameo for cameo in self.cameos if cameo["selected"]), None)
             if selected_cameo:
                 cameo_key = selected_cameo['name'].lower().strip()
+                print(f"🔍 Ищем скины для камео: '{cameo_key}' в {list(self.cameo_skins.keys())}")
+                
                 if cameo_key in self.cameo_skins:
                     skins_dict = self.cameo_skins[cameo_key]
                     for skin_id, skin_data in skins_dict.items():
@@ -584,14 +610,16 @@ class MenuScene(BaseScene):
             for i, skin in enumerate(self.current_skins):
                 if skin["id"] == current_skin_id:
                     self.selected_skin_index = i
+                    print(f"🎯 Найден текущий скин '{current_skin_id}' на позиции {i}")
                     break
             else:
                 self.selected_skin_index = 0  # fallback
+                print(f"⚠️ Текущий скин '{current_skin_id}' не найден в списке, сбрасываем на индекс 0")
         
         print(f"🎯 Текущий индекс скина: {self.selected_skin_index}, всего скинов: {len(self.current_skins)}")
 
     def _select_skin(self):
-        """Применяет выбранный скин - ИСПРАВЛЕНА ОШИБКА KeyError"""
+        """Применяет выбранный скин"""
         if not self.current_skins or self.selected_skin_index >= len(self.current_skins):
             print(f"❌ Нет скинов для выбора: {len(self.current_skins)} доступно, индекс {self.selected_skin_index}")
             return
@@ -599,6 +627,12 @@ class MenuScene(BaseScene):
         skin = self.current_skins[self.selected_skin_index]  # Теперь это список, а не словарь!
         
         print(f"🎯 Выбран скин: {skin['name']} (id: {skin['id']})")
+        
+        # ДОБАВЛЕНО: Проверка разблокировки
+        if not skin["unlocked"]:
+            print(f"❌ Скин {skin['name']} заблокирован!")
+            # Не выходим из режима выбора, просто показываем сообщение
+            return
         
         if self.selected_skin_tab == 0:  # Персонажи
             selected_char = next((char for char in self.characters if char["selected"]), None)
@@ -673,6 +707,7 @@ class MenuScene(BaseScene):
         self.gm.register_scene("victory", VictoryScene(self.gm, None))
     
     def update(self, dt):
+        """Обновление сцены"""
         if self.show_selection_confirmed:
             current_time = pygame.time.get_ticks()
             if current_time - self.selection_confirmed_time > 1500:
@@ -681,6 +716,13 @@ class MenuScene(BaseScene):
                 self.skin_selecting_mode = False
                 # Автоматически возвращаемся на вкладку FIGHT после подтверждения выбора
                 self.current_section = 0
+        
+        # Обновление анимации разблокировки
+        if self.unlock_animation:
+            current_time = pygame.time.get_ticks()
+            if current_time - self.unlock_animation_time > 2000:
+                self.unlock_animation = False
+                self.unlock_animation_skin = None
     
     def draw(self, screen):
         self._draw_background(screen)
@@ -706,6 +748,10 @@ class MenuScene(BaseScene):
             self._draw_exit_section(screen, content_rect)
         
         self._draw_bottom_bar(screen)
+        
+        # Рисуем анимацию разблокировки поверх всего
+        if self.unlock_animation:
+            self._draw_unlock_animation(screen)
     
     def _draw_background(self, screen):
         """Отрисовка фона с градиентом"""
@@ -952,7 +998,14 @@ class MenuScene(BaseScene):
         screen.blit(title, (rect.centerx - title.get_width() // 2, rect.y + self.s(25)))
         
         character = self.characters[self.selected_character]
-        skin = self.character_skins[character["name"].lower()]["default"]
+        char_key = character["name"].lower()
+        
+        # Получаем правильный скин
+        if char_key in self.character_skins and "default" in self.character_skins[char_key]:
+            skin = self.character_skins[char_key]["default"]
+        else:
+            skin = {"card_normal": None, "card_special": None}
+            
         card_size = self._get_card_size()
         
         # 🎯 УПРОЩАЕМ: special карточка ТОЛЬКО во время выбора
@@ -961,8 +1014,15 @@ class MenuScene(BaseScene):
         else:
             card = skin["card_normal"]
             
-        card_rect = pygame.Rect(rect.centerx - card_size//2, rect.centery - card_size//2, card_size, card_size)
-        screen.blit(card, card_rect)
+        if card:
+            card_rect = pygame.Rect(rect.centerx - card_size//2, rect.centery - card_size//2, card_size, card_size)
+            screen.blit(card, card_rect)
+        else:
+            # Если карточки нет, показываем заглушку
+            error_font = self.get_font(18)
+            error_text = error_font.render("Карточка не найдена", True, self.colors["danger"])
+            screen.blit(error_text, (rect.centerx - error_text.get_width() // 2, rect.centery - self.s(10)))
+            card_rect = pygame.Rect(rect.centerx - card_size//2, rect.centery - card_size//2, card_size, card_size)
         
         name_font = self.get_font(22, bold=True)
         name_text = name_font.render(character["name"], True, self.colors["text_light"])
@@ -1044,8 +1104,15 @@ class MenuScene(BaseScene):
         else:
             card = cameo["card_normal"]
             
-        card_rect = pygame.Rect(rect.centerx - card_size//2, rect.centery - card_size//2, card_size, card_size)
-        screen.blit(card, card_rect)
+        if card:
+            card_rect = pygame.Rect(rect.centerx - card_size//2, rect.centery - card_size//2, card_size, card_size)
+            screen.blit(card, card_rect)
+        else:
+            # Если карточки нет, показываем заглушку
+            error_font = self.get_font(18)
+            error_text = error_font.render("Карточка не найдена", True, self.colors["danger"])
+            screen.blit(error_text, (rect.centerx - error_text.get_width() // 2, rect.centery - self.s(10)))
+            card_rect = pygame.Rect(rect.centerx - card_size//2, rect.centery - card_size//2, card_size, card_size)
         
         name_font = self.get_font(20, bold=True)
         name_text = name_font.render(cameo["name"], True, self.colors["text_light"])
@@ -1107,7 +1174,7 @@ class MenuScene(BaseScene):
         screen.blit(hint, (rect.centerx - hint.get_width() // 2, self.cameo_select_btn.bottom + self.s(15)))
     
     def _draw_skins_section(self, screen, rect):
-        """Секция выбора скинов - ПОЛНОСТЬЮ ПЕРЕПИСАНА"""
+        """Секция выбора скинов"""
         # Определяем текущий выбранный персонаж/камео
         if self.selected_skin_tab == 0:  # Персонажи
             selected_entity = next((char for char in self.characters if char["selected"]), None)
@@ -1358,3 +1425,49 @@ class MenuScene(BaseScene):
         copyright_text = copyright_font.render("© 2024 Brawl Fighters", True, self.colors["text_dark"])
         screen.blit(copyright_text, (screen.get_width() - copyright_text.get_width() - self.s(25), 
                                    bar_rect.centery - copyright_text.get_height()//2))
+    
+    def _draw_unlock_animation(self, screen):
+        """Анимация разблокировки скина"""
+        if not self.unlock_animation_skin:
+            return
+        
+        current_time = pygame.time.get_ticks()
+        elapsed = current_time - self.unlock_animation_time
+        progress = min(elapsed / 2000, 1.0)  # 2 секунды анимации
+        
+        # Создаем полупрозрачный черный фон
+        overlay = pygame.Surface((screen.get_width(), screen.get_height()), pygame.SRCALPHA)
+        overlay.fill((0, 0, 0, int(150 * progress)))
+        screen.blit(overlay, (0, 0))
+        
+        # Определяем размер карточки с анимацией
+        base_size = self.s(200)
+        animated_size = int(base_size * (1 + progress * 0.5))  # Увеличивается на 50%
+        
+        # Центрируем карточку
+        card_x = screen.get_width() // 2 - animated_size // 2
+        card_y = screen.get_height() // 2 - animated_size // 2
+        
+        # Рисуем увеличенную карточку
+        card = pygame.Surface((animated_size, animated_size), pygame.SRCALPHA)
+        card.fill((255, 255, 255, int(200 * progress)))
+        pygame.draw.rect(card, (100, 255, 100, int(255 * progress)), 
+                        (0, 0, animated_size, animated_size), self.s(5))
+        
+        # Добавляем свечение
+        glow = pygame.Surface((animated_size + 20, animated_size + 20), pygame.SRCALPHA)
+        pygame.draw.rect(glow, (100, 255, 100, int(100 * progress)), 
+                        (0, 0, animated_size + 20, animated_size + 20), 
+                        border_radius=self.s(10))
+        screen.blit(glow, (card_x - 10, card_y - 10))
+        
+        screen.blit(card, (card_x, card_y))
+        
+        # Текст "РАЗБЛОКИРОВАНО!"
+        text_size = int(self.s(40) * (1 + progress * 0.3))
+        text_font = pygame.font.SysFont("arial", text_size, bold=True)
+        text = text_font.render("РАЗБЛОКИРОВАНО!", True, (100, 255, 100))
+        
+        text_x = screen.get_width() // 2 - text.get_width() // 2
+        text_y = card_y - text.get_height() - self.s(20)
+        screen.blit(text, (text_x, text_y))
