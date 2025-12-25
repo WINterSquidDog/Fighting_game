@@ -86,27 +86,27 @@ class MenuScene(BaseScene):
             },
         ]
 
-        # Данные скинов - ОБНОВЛЕННАЯ СТРУКТУРА
+        # Данные скинов - ОБНОВЛЕННАЯ СТРУКТУРА с учетом сохранений
         self.character_skins = {
             "1x1x1x1": {
                 "default": {"name": self.gm.settings.get_text("skin_default"), "unlocked": True, "card_normal": None, "card_special": None},
-                "timeless": {"name": self.gm.settings.get_text("skin_timeless"), "unlocked": True, "card_normal": None, "card_special": None}
+                "timeless": {"name": self.gm.settings.get_text("skin_timeless"), "unlocked": self.save_manager.is_character_skin_unlocked("1x1x1x1", "timeless"), "card_normal": None, "card_special": None}
             },
             "chara": {
                 "default": {"name": self.gm.settings.get_text("skin_default"), "unlocked": True, "card_normal": None, "card_special": None},
-                "second_time": {"name": "Second Time", "unlocked": True, "card_normal": None, "card_special": None}
+                "second_time": {"name": "Second Time", "unlocked": self.save_manager.is_character_skin_unlocked("chara", "second_time"), "card_normal": None, "card_special": None}
             },
             "steve": {
                 "default": {"name": self.gm.settings.get_text("skin_default"), "unlocked": True, "card_normal": None, "card_special": None},
-                "void_god": {"name": self.gm.settings.get_text("skin_two_faced"), "unlocked": False, "price": 500, "card_normal": None, "card_special": None}
+                "void_god": {"name": self.gm.settings.get_text("skin_two_faced"), "unlocked": self.save_manager.is_character_skin_unlocked("steve", "void_god"), "price": 500, "card_normal": None, "card_special": None}
             }
         }
 
-        # ОБНОВЛЕННАЯ СТРУКТУРА ДЛЯ КАМЕО (все строчными буквами)
+        # ОБНОВЛЕННАЯ СТРУКТУРА ДЛЯ КАМЕО (все строчными буквами) с учетом сохранений
         self.cameo_skins = {
             "c00lk1d": {
                 "default": {"name": self.gm.settings.get_text("skin_default"), "unlocked": True, "card_normal": None, "card_special": None},
-                "tag_time": {"name": self.gm.settings.get_text("skin_tag_time"), "unlocked": True, "card_normal": None, "card_special": None}
+                "tag_time": {"name": self.gm.settings.get_text("skin_tag_time"), "unlocked": self.save_manager.is_cameo_skin_unlocked("c00lk1d", "tag_time"), "card_normal": None, "card_special": None}
             },
             "papyrus": {
                 "default": {"name": self.gm.settings.get_text("skin_default"), "unlocked": True, "card_normal": None, "card_special": None}
@@ -153,6 +153,10 @@ class MenuScene(BaseScene):
         self.unlock_animation_time = 0
         self.unlock_animation_skin = None
         
+        # Сообщение о блокировке скина
+        self.locked_skin_message = False
+        self.locked_skin_message_time = 0
+        
     def on_enter(self):
         """Загружаем карточки и восстанавливаем последний выбор"""
         self._load_all_cards()
@@ -163,6 +167,26 @@ class MenuScene(BaseScene):
         self.save_manager.load_save()  # Перезагружаем сохранения
         self.player_data["coins"] = self.save_manager.get_coins()
         self.player_data["trophies"] = self.save_manager.get_trophies()
+        
+        # ОБНОВЛЯЕМ СТАТУС РАЗБЛОКИРОВКИ СКИНОВ ИЗ СОХРАНЕНИЙ
+        print("🔄 Обновление статуса скинов из сохранений...")
+        
+        # Обновляем character_skins
+        for char_name, skins in self.character_skins.items():
+            for skin_id in skins.keys():
+                if skin_id != "default":
+                    is_unlocked = self.save_manager.is_character_skin_unlocked(char_name, skin_id)
+                    self.character_skins[char_name][skin_id]["unlocked"] = is_unlocked
+                    print(f"  {char_name}.{skin_id}: unlocked={is_unlocked}")
+        
+        # Обновляем cameo_skins
+        for cameo_name, skins in self.cameo_skins.items():
+            for skin_id in skins.keys():
+                if skin_id != "default":
+                    is_unlocked = self.save_manager.is_cameo_skin_unlocked(cameo_name, skin_id)
+                    self.cameo_skins[cameo_name][skin_id]["unlocked"] = is_unlocked
+                    print(f"  {cameo_name}.{skin_id}: unlocked={is_unlocked}")
+        
         print(f"💰 Данные игрока обновлены: {self.player_data['coins']} монет, {self.player_data['trophies']} трофеев")
 
     def _restore_last_selection(self):
@@ -410,6 +434,18 @@ class MenuScene(BaseScene):
         
         for event in events:
             if event.type == pygame.KEYDOWN:
+                # ФИКС: ESC должен выходить из любого режима
+                if event.key == pygame.K_ESCAPE:
+                    if self.skin_selecting_mode:
+                        self.skin_selecting_mode = False
+                        print("🚪 Выход из режима выбора скина (ESC)")
+                    elif self.selecting_mode:
+                        self.selecting_mode = False
+                        print("🚪 Выход из режима выбора персонажа/камео (ESC)")
+                    elif self.current_section == 6:  # Если в разделе EXIT
+                        self._exit_game()
+                    return
+                
                 if not self.selecting_mode and not self.show_selection_confirmed and not self.skin_selecting_mode:
                     if event.key == pygame.K_LEFT:
                         self.current_section = (self.current_section - 1) % len(self.sections)
@@ -456,6 +492,25 @@ class MenuScene(BaseScene):
                         elif event.key == pygame.K_RETURN:
                             if not self.skin_selecting_mode:
                                 self.skin_selecting_mode = True
+                                print("🎯 Вход в режим выбора скина")
+                
+                # ФИКС: В режиме выбора скина должны работать стрелки навигации и ESC
+                elif self.skin_selecting_mode and not self.show_selection_confirmed:
+                    if event.key == pygame.K_RETURN:
+                        self._select_skin()
+                    elif event.key == pygame.K_ESCAPE:
+                        self.skin_selecting_mode = False
+                        print("🚪 Выход из режима выбора скина")
+                    elif event.key in [pygame.K_a, pygame.K_LEFT]:
+                        self.selected_skin_index = (self.selected_skin_index - 1) % len(self.current_skins)
+                        print(f"⬅️ Навигация по скинам: индекс {self.selected_skin_index}")
+                    elif event.key in [pygame.K_d, pygame.K_RIGHT]:
+                        self.selected_skin_index = (self.selected_skin_index + 1) % len(self.current_skins)
+                        print(f"➡️ Навигация по скинам: индекс {self.selected_skin_index}")
+                    elif event.key == pygame.K_TAB:  # Дополнительная кнопка для смены таба
+                        self.selected_skin_tab = (self.selected_skin_tab + 1) % 2
+                        self._refresh_current_skins()
+                        print(f"🔄 Смена таба скинов: {self.selected_skin_tab}")
                 
                 elif self.selecting_mode and not self.show_selection_confirmed:
                     if event.key == pygame.K_RETURN:
@@ -465,21 +520,14 @@ class MenuScene(BaseScene):
                             self._select_cameo()
                     elif event.key == pygame.K_ESCAPE:
                         self.selecting_mode = False
-                
-                elif self.skin_selecting_mode and not self.show_selection_confirmed:
-                    if event.key == pygame.K_RETURN:
-                        self._select_skin()
-                    elif event.key == pygame.K_ESCAPE:
-                        self.skin_selecting_mode = False
-                    elif event.key in [pygame.K_a, pygame.K_LEFT]:
-                        self.selected_skin_index = (self.selected_skin_index - 1) % len(self.current_skins)
-                    elif event.key in [pygame.K_d, pygame.K_RIGHT]:
-                        self.selected_skin_index = (self.selected_skin_index + 1) % len(self.current_skins)
+                        print("🚪 Выход из режима подтверждения выбора")
             
             elif event.type == pygame.MOUSEBUTTONDOWN:
                 if event.button == 1:
+                    # ФИКС: Если показывается сообщение о блокировке скина, игнорируем клики
+                    if self.locked_skin_message:
+                        return
                     self._handle_mouse_click(mouse_pos)
-    
     def _handle_mouse_click(self, mouse_pos):
         """Обработка кликов мыши"""
         if self.show_selection_confirmed:
@@ -619,21 +667,25 @@ class MenuScene(BaseScene):
         print(f"🎯 Текущий индекс скина: {self.selected_skin_index}, всего скинов: {len(self.current_skins)}")
 
     def _select_skin(self):
-        """Применяет выбранный скин"""
+        """Применяет выбранный скин - ИСПРАВЛЕН БАГ С ЗАВИСАНИЕМ"""
         if not self.current_skins or self.selected_skin_index >= len(self.current_skins):
             print(f"❌ Нет скинов для выбора: {len(self.current_skins)} доступно, индекс {self.selected_skin_index}")
             return
             
-        skin = self.current_skins[self.selected_skin_index]  # Теперь это список, а не словарь!
+        skin = self.current_skins[self.selected_skin_index]
         
         print(f"🎯 Выбран скин: {skin['name']} (id: {skin['id']})")
         
-        # ДОБАВЛЕНО: Проверка разблокировки
+        # ИСПРАВЛЕНИЕ БАГА: Проверка разблокировки - не выходим из режима, просто показываем сообщение
         if not skin["unlocked"]:
-            print(f"❌ Скин {skin['name']} заблокирован!")
-            # Не выходим из режима выбора, просто показываем сообщение
+            print(f"❌ Скин {skin['name']} заблокирован! Показываем сообщение...")
+            self.locked_skin_message = True
+            self.locked_skin_message_time = pygame.time.get_ticks()
+            # ФИКС: Не блокируем управление, пользователь может нажать ESC или выбрать другой скин
+            # skin_selecting_mode остается True, чтобы можно было выбрать другой скин
             return
         
+        # Если скин разблокирован, применяем его
         if self.selected_skin_tab == 0:  # Персонажи
             selected_char = next((char for char in self.characters if char["selected"]), None)
             if selected_char:
@@ -657,7 +709,7 @@ class MenuScene(BaseScene):
         
         self.selection_confirmed_time = pygame.time.get_ticks()
         self.show_selection_confirmed = True
-        self.skin_selecting_mode = False
+        self.skin_selecting_mode = False  # Выходим из режима выбора
 
     def _start_battle(self):
         selected_char = next((char for char in self.characters if char["selected"]), None)
@@ -723,6 +775,12 @@ class MenuScene(BaseScene):
             if current_time - self.unlock_animation_time > 2000:
                 self.unlock_animation = False
                 self.unlock_animation_skin = None
+        
+        # ФИКС: Обновление сообщения о блокировке скина
+        if self.locked_skin_message:
+            current_time = pygame.time.get_ticks()
+            if current_time - self.locked_skin_message_time > 1500:
+                self.locked_skin_message = False
     
     def draw(self, screen):
         self._draw_background(screen)
@@ -752,6 +810,10 @@ class MenuScene(BaseScene):
         # Рисуем анимацию разблокировки поверх всего
         if self.unlock_animation:
             self._draw_unlock_animation(screen)
+        
+        # Рисуем сообщение о блокировке скина
+        if self.locked_skin_message:
+            self._draw_locked_skin_message(screen)
     
     def _draw_background(self, screen):
         """Отрисовка фона с градиентом"""
@@ -1248,7 +1310,7 @@ class MenuScene(BaseScene):
                 
                 # Статус разблокировки
                 status_font = self.get_font(18)
-                status_text = "🔓 UNLOCKED" if skin["unlocked"] else "🔒 LOCKED"
+                status_text = "🔓 РАЗБЛОКИРОВАН" if skin["unlocked"] else "🔒 ЗАБЛОКИРОВАН"
                 status_color = self.colors["selected"] if skin["unlocked"] else self.colors["danger"]
                 status = status_font.render(status_text, True, status_color)
                 screen.blit(status, (rect.centerx - status.get_width() // 2, card_rect.bottom + self.s(40)))
@@ -1299,16 +1361,16 @@ class MenuScene(BaseScene):
         
         if self.show_selection_confirmed:
             btn_color = self.colors["selected"]
-            btn_text = "SELECTED!"
+            btn_text = "ВЫБРАНО!"
         elif self.skin_selecting_mode:
             btn_color = self.colors["selected"]
-            btn_text = "CONFIRM"
+            btn_text = "ПОДТВЕРДИТЬ"
         elif can_select:
             btn_color = self.colors["button_primary"]
-            btn_text = "SELECT"
+            btn_text = "ВЫБРАТЬ"
         else:
             btn_color = (100, 100, 100)  # Серый для заблокированных
-            btn_text = "LOCKED"
+            btn_text = "ЗАБЛОКИРОВАНО"
             
         pygame.draw.rect(screen, btn_color, self.skin_select_btn, border_radius=self.s(8))
         pygame.draw.rect(screen, self.colors["text_light"], self.skin_select_btn, self.s(2), border_radius=self.s(8))
@@ -1320,13 +1382,13 @@ class MenuScene(BaseScene):
         
         hint_font = self.get_font(15)
         if self.show_selection_confirmed:
-            hint_text = "Returning to Fight section..."
+            hint_text = "Возврат в раздел FIGHT..."
         elif self.skin_selecting_mode:
-            hint_text = "Press ENTER or click 'Confirm' to select"
+            hint_text = "Нажмите ENTER или 'Подтвердить' для выбора"
         elif not can_select:
-            hint_text = "This skin is locked"
+            hint_text = "Этот скин заблокирован. Купите его в магазине!"
         else:
-            hint_text = "Use A/D, ←→ or click arrows to browse skins"
+            hint_text = "Используйте A/D, ←→ или кликните на стрелки для просмотра скинов"
             
         hint = hint_font.render(hint_text, True, self.colors["text_dark"])
         screen.blit(hint, (rect.centerx - hint.get_width() // 2, self.skin_select_btn.bottom + self.s(15)))
@@ -1352,13 +1414,13 @@ class MenuScene(BaseScene):
         pygame.draw.rect(screen, self.colors["text_light"], self.shop_button, self.s(2), border_radius=self.s(12))
         
         btn_font = self.get_font(20, bold=True)
-        btn_text = btn_font.render("OPEN SHOP", True, self.colors["text_light"])
+        btn_text = btn_font.render("ОТКРЫТЬ МАГАЗИН", True, self.colors["text_light"])
         screen.blit(btn_text, (self.shop_button.centerx - btn_text.get_width() // 2,
                          self.shop_button.centery - btn_text.get_height() // 2))
         
         # Подсказка
         hint_font = self.get_font(16)
-        hint_text = "Click to open the shop"
+        hint_text = "Кликните чтобы открыть магазин"
         hint = hint_font.render(hint_text, True, self.colors["text_dark"])
         screen.blit(hint, (rect.centerx - hint.get_width() // 2, self.shop_button.bottom + self.s(20)))
     
@@ -1383,7 +1445,7 @@ class MenuScene(BaseScene):
         pygame.draw.rect(screen, self.colors["text_light"], self.settings_button, self.s(2), border_radius=self.s(12))
         
         btn_font = self.get_font(20, bold=True)
-        btn_text = btn_font.render("OPEN SETTINGS", True, self.colors["text_light"])
+        btn_text = btn_font.render("ОТКРЫТЬ НАСТРОЙКИ", True, self.colors["text_light"])
         screen.blit(btn_text, (self.settings_button.centerx - btn_text.get_width() // 2,
                          self.settings_button.centery - btn_text.get_height() // 2))
     
@@ -1471,3 +1533,31 @@ class MenuScene(BaseScene):
         text_x = screen.get_width() // 2 - text.get_width() // 2
         text_y = card_y - text.get_height() - self.s(20)
         screen.blit(text, (text_x, text_y))
+    
+    def _draw_locked_skin_message(self, screen):
+        """Сообщение о заблокированном скине"""
+        current_time = pygame.time.get_ticks()
+        elapsed = current_time - self.locked_skin_message_time
+        progress = min(elapsed / 1500, 1.0)
+        
+        if progress >= 1.0:
+            return
+        
+        # Создаем полупрозрачный фон
+        overlay = pygame.Surface((screen.get_width(), self.s(100)), pygame.SRCALPHA)
+        overlay.fill((0, 0, 0, int(200 * progress)))
+        
+        overlay_y = screen.get_height() // 2 - self.s(50)
+        screen.blit(overlay, (0, overlay_y))
+        
+        # Текст сообщения
+        text_font = self.get_font(24, bold=True)
+        text = text_font.render("СКИН ЗАБЛОКИРОВАН!", True, self.colors["danger"])
+        screen.blit(text, (screen.get_width() // 2 - text.get_width() // 2, 
+                         overlay_y + self.s(20)))
+        
+        # Подсказка
+        hint_font = self.get_font(18)
+        hint = hint_font.render("Купите скин в магазине", True, self.colors["text_light"])
+        screen.blit(hint, (screen.get_width() // 2 - hint.get_width() // 2, 
+                          overlay_y + self.s(60)))

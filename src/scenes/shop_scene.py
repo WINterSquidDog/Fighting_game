@@ -70,8 +70,16 @@ class ShopScene(BaseScene):
         # Частицы для анимации
         self.particles = []
         
+        # Стрелки навигации (фикс для кнопок влево/вправо)
+        self.skin_left_btn_rect = None
+        self.skin_right_btn_rect = None
+        
+        # Сообщение о блокировке скина (фикс бага с зависанием)
+        self.locked_skin_message = False
+        self.locked_skin_message_time = 0
+        
     def load_skins_for_sale(self):
-        """Загружает все скины, доступные для покупки"""
+        """Загружает все скины, доступные для покупки с учетом сохранений"""
         self.skins_for_sale = []
         
         # Получаем ссылку на menu_scene для доступа к скинам
@@ -81,9 +89,16 @@ class ShopScene(BaseScene):
             # Скины персонажей
             for char_name, skins in menu_scene.character_skins.items():
                 for skin_id, skin_data in skins.items():
-                    # Пропускаем дефолтные скины и уже разблокированные
-                    if skin_id != "default" and not skin_data.get("unlocked", True):
-                        # ЗАГРУЖАЕМ КАРТОЧКИ ИЗ ФАЙЛОВ как в MenuScene
+                    # Пропускаем дефолтные скины
+                    if skin_id == "default":
+                        continue
+                    
+                    # Проверяем разблокирован ли скин через save_manager
+                    is_unlocked = self.save_manager.is_character_skin_unlocked(char_name, skin_id)
+                    
+                    # Добавляем только если не разблокирован
+                    if not is_unlocked:
+                        # Загружаем карточки из файлов как в MenuScene
                         card_normal = self._load_card_image(
                             f"{char_name}_{skin_id}_normal.jpg", 
                             False, 
@@ -95,7 +110,7 @@ class ShopScene(BaseScene):
                             self._get_card_size()
                         )
                         
-                        print(f"🛍️ Загружаем скин {char_name}.{skin_id}: normal={card_normal is not None}, special={card_special is not None}")
+                        print(f"🛍️ Скин для продажи {char_name}.{skin_id}: unlocked={is_unlocked}")
                         
                         self.skins_for_sale.append({
                             "type": "character",
@@ -103,7 +118,7 @@ class ShopScene(BaseScene):
                             "skin_id": skin_id,
                             "name": skin_data.get("name", f"Скин {skin_id}"),
                             "price": skin_data.get("price", 100),
-                            "unlocked": False,
+                            "unlocked": False,  # В магазине всегда false изначально
                             "card_normal": card_normal,
                             "card_special": card_special
                         })
@@ -112,8 +127,14 @@ class ShopScene(BaseScene):
             # Скины камео
             for cameo_name, skins in menu_scene.cameo_skins.items():
                 for skin_id, skin_data in skins.items():
-                    if skin_id != "default" and not skin_data.get("unlocked", True):
-                        # ЗАГРУЖАЕМ КАРТОЧКИ ИЗ ФАЙЛОВ как в MenuScene
+                    if skin_id == "default":
+                        continue
+                    
+                    # Проверяем разблокирован ли скин через save_manager
+                    is_unlocked = self.save_manager.is_cameo_skin_unlocked(cameo_name, skin_id)
+                    
+                    # Добавляем только если не разблокирован
+                    if not is_unlocked:
                         card_normal = self._load_card_image(
                             f"{cameo_name}_{skin_id}_normal.jpg", 
                             False, 
@@ -125,7 +146,7 @@ class ShopScene(BaseScene):
                             self._get_card_size()
                         )
                         
-                        print(f"🛍️ Загружаем камео скин {cameo_name}.{skin_id}: normal={card_normal is not None}, special={card_special is not None}")
+                        print(f"🛍️ Камео скин для продажи {cameo_name}.{skin_id}: unlocked={is_unlocked}")
                         
                         self.skins_for_sale.append({
                             "type": "cameo",
@@ -139,10 +160,6 @@ class ShopScene(BaseScene):
                         })
         
         print(f"🛍️ Загружено {len(self.skins_for_sale)} скинов для продажи")
-        
-        # Дебаг вывод всех скинов
-        for i, skin in enumerate(self.skins_for_sale):
-            print(f"  {i}. {skin['name']} ({skin['type']}:{skin['char_name'] if 'char_name' in skin else skin['cameo_name']}.{skin['skin_id']}) - Цена: {skin['price']}")
     
     def _get_card_size(self):
         """Определяем размер карточки как в MenuScene"""
@@ -210,15 +227,27 @@ class ShopScene(BaseScene):
                     self.gm.set_scene("menu")
                 elif event.key == pygame.K_LEFT:
                     if self.current_tab == 2 and self.skins_for_sale:  # Скины
-                        self.selected_skin_index = (self.selected_skin_index - 1) % len(self.skins_for_sale)
+                        # ФИКС: Должна работать даже во время анимации покупки
+                        if not self.purchase_animation:
+                            self.selected_skin_index = (self.selected_skin_index - 1) % len(self.skins_for_sale)
                     elif self.current_tab == 3:  # Валюта
-                        self.selected_currency_index = (self.selected_currency_index - 1) % len(self.currency_packs)
+                        # ФИКС: Должна работать даже во время анимации покупки
+                        if not self.purchase_animation:
+                            self.selected_currency_index = (self.selected_currency_index - 1) % len(self.currency_packs)
                 elif event.key == pygame.K_RIGHT:
                     if self.current_tab == 2 and self.skins_for_sale:  # Скины
-                        self.selected_skin_index = (self.selected_skin_index + 1) % len(self.skins_for_sale)
+                        # ФИКС: Должна работать даже во время анимации покупки
+                        if not self.purchase_animation:
+                            self.selected_skin_index = (self.selected_skin_index + 1) % len(self.skins_for_sale)
                     elif self.current_tab == 3:  # Валюта
-                        self.selected_currency_index = (self.selected_currency_index + 1) % len(self.currency_packs)
+                        # ФИКС: Должна работать даже во время анимации покупки
+                        if not self.purchase_animation:
+                            self.selected_currency_index = (self.selected_currency_index + 1) % len(self.currency_packs)
                 elif event.key == pygame.K_RETURN:
+                    # ФИКС: Не работаем во время анимации покупки
+                    if self.purchase_animation:
+                        return
+                        
                     if self.current_tab == 2 and self.skins_for_sale:  # Скины
                         self.buy_selected_skin()
                     elif self.current_tab == 3:  # Валюта
@@ -226,6 +255,9 @@ class ShopScene(BaseScene):
             
             elif event.type == pygame.MOUSEBUTTONDOWN:
                 if event.button == 1:
+                    # ФИКС: Не обрабатываем клики во время анимации покупки
+                    if self.purchase_animation:
+                        return
                     self.handle_mouse_click(mouse_pos)
     
     def handle_mouse_click(self, mouse_pos):
@@ -247,9 +279,16 @@ class ShopScene(BaseScene):
         # Кнопка "Назад"
         elif self.back_button and self.back_button.collidepoint(mouse_pos):
             self.gm.set_scene("menu")
+        
+        # ФИКС: Обработка кликов по стрелкам навигации скинов
+        elif self.current_tab == 2 and self.skins_for_sale:
+            if self.skin_left_btn_rect and self.skin_left_btn_rect.collidepoint(mouse_pos):
+                self.selected_skin_index = (self.selected_skin_index - 1) % len(self.skins_for_sale)
+            elif self.skin_right_btn_rect and self.skin_right_btn_rect.collidepoint(mouse_pos):
+                self.selected_skin_index = (self.selected_skin_index + 1) % len(self.skins_for_sale)
     
     def buy_selected_skin(self):
-        """Покупка выбранного скина"""
+        """Покупка выбранного скина - ИСПРАВЛЕНА ДЛЯ СОХРАНЕНИЯ"""
         if not self.skins_for_sale or self.selected_skin_index >= len(self.skins_for_sale):
             return
         
@@ -268,7 +307,13 @@ class ShopScene(BaseScene):
             # Сохраняем новые монеты в менеджер сохранений
             self.save_manager.data["coins"] = self.player_coins
             
-            # Разблокируем скин
+            # Разблокируем скин в сохранениях
+            if skin["type"] == "character":
+                self.save_manager.unlock_character_skin(skin["char_name"], skin["skin_id"])
+            else:  # cameo
+                self.save_manager.unlock_cameo_skin(skin["cameo_name"], skin["skin_id"])
+            
+            # Отмечаем скин как купленный в списке магазина
             skin["unlocked"] = True
             
             # Получаем menu_scene для обновления данных
@@ -287,9 +332,6 @@ class ShopScene(BaseScene):
                     if skin["cameo_name"] in menu_scene.cameo_skins:
                         menu_scene.cameo_skins[skin["cameo_name"]][skin["skin_id"]]["unlocked"] = True
             
-            # Сохраняем игру
-            self.save_manager.save_game()
-            
             # Обновляем баланс в меню сцене
             if menu_scene:
                 menu_scene.player_data["coins"] = self.player_coins
@@ -303,8 +345,12 @@ class ShopScene(BaseScene):
             self.purchase_animation_item = skin
             
             print(f"✅ Куплен скин {skin['name']} за {skin['price']} монет. Баланс: {self.player_coins}")
+            print(f"💾 Скин сохранен как разблокированный: {skin['char_name'] if skin['type'] == 'character' else skin['cameo_name']}.{skin['skin_id']}")
         else:
             print(f"❌ Недостаточно монет для покупки скина {skin['name']}")
+            # ФИКС: Показываем сообщение о недостатке денег
+            self.locked_skin_message = True
+            self.locked_skin_message_time = pygame.time.get_ticks()
     
     def buy_selected_currency(self):
         """Покупка выбранного набора валюты - ТЕСТОВАЯ ВЕРСИЯ"""
@@ -372,6 +418,12 @@ class ShopScene(BaseScene):
                 self.purchase_animation = False
                 self.purchase_animation_item = None
                 self.particles = []
+        
+        # ФИКС: Обновление сообщения о блокировке скина
+        if self.locked_skin_message:
+            current_time = pygame.time.get_ticks()
+            if current_time - self.locked_skin_message_time > 1500:
+                self.locked_skin_message = False
     
     def draw(self, screen):
         """Отрисовка сцены"""
@@ -396,6 +448,10 @@ class ShopScene(BaseScene):
         # Отрисовка анимации покупки поверх всего
         if self.purchase_animation:
             self.draw_purchase_animation(screen)
+        
+        # ФИКС: Отрисовка сообщения о блокировке скина
+        if self.locked_skin_message:
+            self.draw_locked_skin_message(screen)
     
     def draw_background(self, screen):
         """Отрисовка фона"""
@@ -504,8 +560,6 @@ class ShopScene(BaseScene):
         # ИСПРАВЛЕНИЕ: Используем тот же размер карточки что и в MenuScene
         card_size = self._get_card_size()
         
-        print(f"🖼️ Отрисовка скина {skin['name']} ({skin.get('char_name', skin.get('cameo_name', 'unknown'))}.{skin['skin_id']})")
-        
         # Карточка скина - используем card_normal как в меню
         card = skin.get("card_normal")
         if card and isinstance(card, pygame.Surface):
@@ -518,13 +572,6 @@ class ShopScene(BaseScene):
             placeholder = self._create_placeholder_card(filename, False, card_size)
             card_rect = pygame.Rect(rect.centerx - card_size//2, rect.centery - card_size//2, card_size, card_size)
             screen.blit(placeholder, card_rect)
-            
-            # Дополнительная информация для отладки
-            debug_font = self.get_font(12)
-            debug_text = debug_font.render(f"Файл: {filename}", 
-                                         True, self.colors["text_dark"])
-            screen.blit(debug_text, (rect.centerx - debug_text.get_width()//2,
-                                   card_rect.centery + card_size//4))
         
         # Название скина
         name_font = self.get_font(22, bold=True)
@@ -580,41 +627,45 @@ class ShopScene(BaseScene):
         hint = hint_font.render(hint_text, True, self.colors["text_dark"])
         screen.blit(hint, (rect.centerx - hint.get_width()//2, self.buy_button.bottom + self.s(20)))
         
-        # ИСПРАВЛЕНИЕ: Добавляем стрелки навигации как в меню
+        # ФИКС: Добавляем стрелки навигации как в меню и сохраняем их прямоугольники
         if len(self.skins_for_sale) > 1:
             arrow_size = self.s(50)
             card_center_y = rect.centery  # Центр по вертикали
             
-            # Стрелка влево
-            left_btn_rect = pygame.Rect(
+            # Стрелка влево - ФИКС: сохраняем прямоугольник для обработки кликов
+            self.skin_left_btn_rect = pygame.Rect(
                 rect.centerx - card_size//2 - arrow_size - self.s(15),
                 card_center_y - arrow_size//2,
                 arrow_size,
                 arrow_size
             )
             
-            pygame.draw.rect(screen, self.colors["button_primary"], left_btn_rect, border_radius=self.s(10))
-            pygame.draw.rect(screen, self.colors["text_light"], left_btn_rect, self.s(2), border_radius=self.s(10))
+            pygame.draw.rect(screen, self.colors["button_primary"], self.skin_left_btn_rect, border_radius=self.s(10))
+            pygame.draw.rect(screen, self.colors["text_light"], self.skin_left_btn_rect, self.s(2), border_radius=self.s(10))
             
             arrow_font = self.get_font(28, bold=True)
             left_arrow = arrow_font.render("⟨", True, self.colors["text_light"])
-            screen.blit(left_arrow, (left_btn_rect.centerx - left_arrow.get_width()//2,
-                                   left_btn_rect.centery - left_arrow.get_height()//2))
+            screen.blit(left_arrow, (self.skin_left_btn_rect.centerx - left_arrow.get_width()//2,
+                                   self.skin_left_btn_rect.centery - left_arrow.get_height()//2))
             
-            # Стрелка вправо
-            right_btn_rect = pygame.Rect(
+            # Стрелка вправо - ФИКС: сохраняем прямоугольник для обработки кликов
+            self.skin_right_btn_rect = pygame.Rect(
                 rect.centerx + card_size//2 + self.s(15),
                 card_center_y - arrow_size//2,
                 arrow_size,
                 arrow_size
             )
             
-            pygame.draw.rect(screen, self.colors["button_primary"], right_btn_rect, border_radius=self.s(10))
-            pygame.draw.rect(screen, self.colors["text_light"], right_btn_rect, self.s(2), border_radius=self.s(10))
+            pygame.draw.rect(screen, self.colors["button_primary"], self.skin_right_btn_rect, border_radius=self.s(10))
+            pygame.draw.rect(screen, self.colors["text_light"], self.skin_right_btn_rect, self.s(2), border_radius=self.s(10))
             
             right_arrow = arrow_font.render("⟩", True, self.colors["text_light"])
-            screen.blit(right_arrow, (right_btn_rect.centerx - right_arrow.get_width()//2,
-                                    right_btn_rect.centery - right_arrow.get_height()//2))
+            screen.blit(right_arrow, (self.skin_right_btn_rect.centerx - right_arrow.get_width()//2,
+                                    self.skin_right_btn_rect.centery - right_arrow.get_height()//2))
+        else:
+            # Если скин один, очищаем ссылки на кнопки
+            self.skin_left_btn_rect = None
+            self.skin_right_btn_rect = None
     
     def draw_currency_tab(self, screen, rect):
         """Вкладка валюты - ТЕСТОВАЯ ВЕРСИЯ"""
@@ -774,3 +825,31 @@ class ShopScene(BaseScene):
         text_x = screen.get_width() // 2 - text.get_width() // 2
         text_y = card_y - text.get_height() - self.s(20)
         screen.blit(text, (text_x, text_y))
+    
+    def draw_locked_skin_message(self, screen):
+        """Сообщение о недостатке денег для покупки скина"""
+        current_time = pygame.time.get_ticks()
+        elapsed = current_time - self.locked_skin_message_time
+        progress = min(elapsed / 1500, 1.0)
+        
+        if progress >= 1.0:
+            return
+        
+        # Создаем полупрозрачный фон
+        overlay = pygame.Surface((screen.get_width(), self.s(100)), pygame.SRCALPHA)
+        overlay.fill((0, 0, 0, int(200 * progress)))
+        
+        overlay_y = screen.get_height() // 2 - self.s(50)
+        screen.blit(overlay, (0, overlay_y))
+        
+        # Текст сообщения
+        text_font = self.get_font(24, bold=True)
+        text = text_font.render("НЕДОСТАТОЧНО МОНЕТ!", True, self.colors["danger"])
+        screen.blit(text, (screen.get_width() // 2 - text.get_width() // 2, 
+                         overlay_y + self.s(20)))
+        
+        # Подсказка
+        hint_font = self.get_font(18)
+        hint = hint_font.render("Купите монеты в разделе ВАЛЮТА", True, self.colors["text_light"])
+        screen.blit(hint, (screen.get_width() // 2 - hint.get_width() // 2, 
+                          overlay_y + self.s(60)))
