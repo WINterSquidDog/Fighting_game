@@ -98,30 +98,31 @@ class MenuScene(BaseScene):
             },
         ]
 
-        # Данные скинов - ОБНОВЛЕННАЯ СТРУКТУРА с учетом сохранений
+        # Данные скинов - ОБНОВЛЕННАЯ СТРУКТУРА с учетом сохранений И ЦЕН
         self.character_skins = {
             "1x1x1x1": {
-                "default": {"name": self.gm.settings.get_text("skin_default"), "unlocked": True, "card_normal": None, "card_special": None},
-                "timeless": {"name": self.gm.settings.get_text("skin_timeless"), "unlocked": self.save_manager.is_character_skin_unlocked("1x1x1x1", "timeless"), "card_normal": None, "card_special": None}
+                "default": {"name": self.gm.settings.get_text("skin_default"), "unlocked": True, "price": 0, "card_normal": None, "card_special": None},
+                "timeless": {"name": self.gm.settings.get_text("skin_timeless"), "unlocked": True, "price": 0, "card_normal": None, "card_special": None}  # Всегда разблокирован
             },
             "chara": {
-                "default": {"name": self.gm.settings.get_text("skin_default"), "unlocked": True, "card_normal": None, "card_special": None},
-                "second_time": {"name": "Second Time", "unlocked": self.save_manager.is_character_skin_unlocked("chara", "second_time"), "card_normal": None, "card_special": None}
+                "default": {"name": self.gm.settings.get_text("skin_default"), "unlocked": True, "price": 0, "card_normal": None, "card_special": None},
+                "second_time": {"name": "Second Time", "unlocked": self.save_manager.is_character_skin_unlocked("chara", "second_time"), "price": 500, "card_normal": None, "card_special": None}
             },
             "steve": {
-                "default": {"name": self.gm.settings.get_text("skin_default"), "unlocked": True, "card_normal": None, "card_special": None},
+                "default": {"name": self.gm.settings.get_text("skin_default"), "unlocked": True, "price": 0, "card_normal": None, "card_special": None},
                 "void_god": {"name": self.gm.settings.get_text("skin_two_faced"), "unlocked": self.save_manager.is_character_skin_unlocked("steve", "void_god"), "price": 500, "card_normal": None, "card_special": None}
             }
         }
 
-        # ОБНОВЛЕННАЯ СТРУКТУРА ДЛЯ КАМЕО (все строчными буквами) с учетом сохранений
+        # ОБНОВЛЕННАЯ СТРУКТУРА ДЛЯ КАМЕО (все строчными буквами) с учетом сохранений И ЦЕН
         self.cameo_skins = {
             "c00lk1d": {
-                "default": {"name": self.gm.settings.get_text("skin_default"), "unlocked": True, "card_normal": None, "card_special": None},
-                "tag_time": {"name": self.gm.settings.get_text("skin_tag_time"), "unlocked": self.save_manager.is_cameo_skin_unlocked("c00lk1d", "tag_time"), "card_normal": None, "card_special": None}
+                "default": {"name": self.gm.settings.get_text("skin_default"), "unlocked": True, "price": 0, "card_normal": None, "card_special": None},
+                "tag_time": {"name": self.gm.settings.get_text("skin_tag_time"), "unlocked": self.save_manager.is_cameo_skin_unlocked("c00lk1d", "tag_time"), "price": 100, "card_normal": None, "card_special": None}
             },
             "papyrus": {
-                "default": {"name": self.gm.settings.get_text("skin_default"), "unlocked": True, "card_normal": None, "card_special": None}
+                "default": {"name": self.gm.settings.get_text("skin_default"), "unlocked": True, "price": 0, "card_normal": None, "card_special": None},
+                "withered": {"name": "Withered", "unlocked": self.save_manager.is_cameo_skin_unlocked("papyrus", "withered"), "price": 200, "card_normal": None, "card_special": None}
             },
         }
 

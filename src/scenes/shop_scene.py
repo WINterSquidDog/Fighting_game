@@ -4,6 +4,7 @@ import random
 from src.managers.game_manager import BaseScene
 import sys
 import os
+
 def resource_path(relative_path):
     """ Получает правильный путь к ресурсам для .exe """
     try:
@@ -11,6 +12,8 @@ def resource_path(relative_path):
         base_path = sys._MEIPASS
     except Exception:
         base_path = os.path.abspath(".")
+    return os.path.join(base_path, relative_path)
+
 class ShopScene(BaseScene):
     def __init__(self, gm):
         super().__init__(gm)
@@ -96,28 +99,27 @@ class ShopScene(BaseScene):
             # Скины персонажей
             for char_name, skins in menu_scene.character_skins.items():
                 for skin_id, skin_data in skins.items():
-                    # Пропускаем дефолтные скины
-                    if skin_id == "default":
+                    # Пропускаем дефолтные скины и всегда разблокированные
+                    if skin_id == "default" or skin_data.get("unlocked", False):
                         continue
                     
                     # Проверяем разблокирован ли скин через save_manager
                     is_unlocked = self.save_manager.is_character_skin_unlocked(char_name, skin_id)
                     
-                    # Добавляем только если не разблокирован
-                    if not is_unlocked:
-                        # Загружаем карточки из файлов как в MenuScene
-                        card_normal = self._load_card_image(
-                            f"{char_name}_{skin_id}_normal.jpg", 
-                            False, 
-                            self._get_card_size()
-                        )
-                        card_special = self._load_card_image(
-                            f"{char_name}_{skin_id}_special.jpg", 
-                            True, 
-                            self._get_card_size()
-                        )
+                    # Добавляем только если не разблокирован И цена > 0
+                    if not is_unlocked and skin_data.get("price", 0) > 0:
+                        # ЗАГРУЖАЕМ КАРТОЧКИ ПРАВИЛЬНО - как в MenuScene
+                        card_size = self._get_card_size()
                         
-                        print(f"🛍️ Скин для продажи {char_name}.{skin_id}: unlocked={is_unlocked}")
+                        # ИСПРАВЛЕНИЕ: Правильные пути к файлам карточек
+                        normal_filename = f"{char_name}_{skin_id}_normal.jpg"
+                        special_filename = f"{char_name}_{skin_id}_special.jpg"
+                        
+                        # Используем те же методы загрузки что и в MenuScene
+                        card_normal = self._load_card_image(normal_filename, False, card_size)
+                        card_special = self._load_card_image(special_filename, True, card_size)
+                        
+                        print(f"🛍️ Скин для продажи {char_name}.{skin_id}: price={skin_data.get('price', 0)}, unlocked={is_unlocked}")
                         
                         self.skins_for_sale.append({
                             "type": "character",
@@ -125,7 +127,7 @@ class ShopScene(BaseScene):
                             "skin_id": skin_id,
                             "name": skin_data.get("name", f"Скин {skin_id}"),
                             "price": skin_data.get("price", 100),
-                            "unlocked": False,  # В магазине всегда false изначально
+                            "unlocked": is_unlocked,
                             "card_normal": card_normal,
                             "card_special": card_special
                         })
@@ -134,26 +136,24 @@ class ShopScene(BaseScene):
             # Скины камео
             for cameo_name, skins in menu_scene.cameo_skins.items():
                 for skin_id, skin_data in skins.items():
-                    if skin_id == "default":
+                    if skin_id == "default" or skin_data.get("unlocked", False):
                         continue
                     
                     # Проверяем разблокирован ли скин через save_manager
                     is_unlocked = self.save_manager.is_cameo_skin_unlocked(cameo_name, skin_id)
                     
-                    # Добавляем только если не разблокирован
-                    if not is_unlocked:
-                        card_normal = self._load_card_image(
-                            f"{cameo_name}_{skin_id}_normal.jpg", 
-                            False, 
-                            self._get_card_size()
-                        )
-                        card_special = self._load_card_image(
-                            f"{cameo_name}_{skin_id}_special.jpg", 
-                            True, 
-                            self._get_card_size()
-                        )
+                    # Добавляем только если не разблокирован И цена > 0
+                    if not is_unlocked and skin_data.get("price", 0) > 0:
+                        card_size = self._get_card_size()
                         
-                        print(f"🛍️ Камео скин для продажи {cameo_name}.{skin_id}: unlocked={is_unlocked}")
+                        # ИСПРАВЛЕНИЕ: Правильные пути к файлам карточек
+                        normal_filename = f"{cameo_name}_{skin_id}_normal.jpg"
+                        special_filename = f"{cameo_name}_{skin_id}_special.jpg"
+                        
+                        card_normal = self._load_card_image(normal_filename, False, card_size)
+                        card_special = self._load_card_image(special_filename, True, card_size)
+                        
+                        print(f"🛍️ Камео скин для продажи {cameo_name}.{skin_id}: price={skin_data.get('price', 0)}, unlocked={is_unlocked}")
                         
                         self.skins_for_sale.append({
                             "type": "cameo",
@@ -161,12 +161,15 @@ class ShopScene(BaseScene):
                             "skin_id": skin_id,
                             "name": skin_data.get("name", f"Скин {skin_id}"),
                             "price": skin_data.get("price", 100),
-                            "unlocked": False,
+                            "unlocked": is_unlocked,
                             "card_normal": card_normal,
                             "card_special": card_special
                         })
         
         print(f"🛍️ Загружено {len(self.skins_for_sale)} скинов для продажи")
+        
+        # Сортируем по цене (от дешевых к дорогим)
+        self.skins_for_sale.sort(key=lambda x: x["price"])
     
     def _get_card_size(self):
         """Определяем размер карточки как в MenuScene"""
@@ -180,7 +183,7 @@ class ShopScene(BaseScene):
     
     def _load_card_image(self, filename, is_special, card_size):
         """Загрузка карточки с указанным размером - как в MenuScene"""
-        # ИСПРАВЛЕНИЕ: Правильный путь к карточкам
+        # ИСПРАВЛЕНИЕ: Правильный путь к карточкам - Sprites/cards/filename
         card_path = resource_path(os.path.join("Sprites", "cards", filename))
         
         try:
@@ -191,6 +194,22 @@ class ShopScene(BaseScene):
                 return card
             else:
                 print(f"⚠️ Карточка не найдена: {card_path}")
+                
+                # Пробуем найти в альтернативных местах
+                alt_paths = [
+                    resource_path(os.path.join("Sprites", "cards", filename.lower())),
+                    resource_path(os.path.join("sprites", "cards", filename)),
+                    resource_path(os.path.join("sprites", "cards", filename.lower())),
+                ]
+                
+                for alt_path in alt_paths:
+                    if os.path.exists(alt_path):
+                        print(f"✅ Найдена альтернативная карточка: {alt_path}")
+                        card = pygame.image.load(alt_path).convert_alpha()
+                        card = pygame.transform.scale(card, (card_size, card_size))
+                        return card
+                
+                # Если нигде не нашли, создаем заглушку
                 return self._create_placeholder_card(filename, is_special, card_size)
         except Exception as e:
             print(f"❌ Ошибка загрузки карточки {card_path}: {e}")
@@ -320,6 +339,9 @@ class ShopScene(BaseScene):
             else:  # cameo
                 self.save_manager.unlock_cameo_skin(skin["cameo_name"], skin["skin_id"])
             
+            # Сохраняем изменения
+            self.save_manager.save_game()
+            
             # Отмечаем скин как купленный в списке магазина
             skin["unlocked"] = True
             
@@ -342,6 +364,7 @@ class ShopScene(BaseScene):
             # Обновляем баланс в меню сцене
             if menu_scene:
                 menu_scene.player_data["coins"] = self.player_coins
+                menu_scene.save_manager.data["coins"] = self.player_coins
             
             # Создаем частицы для анимации
             self.create_particles()
@@ -557,9 +580,15 @@ class ShopScene(BaseScene):
         if not self.skins_for_sale:
             # Сообщение, если все скины куплены
             message_font = self.get_font(20)
-            message_text = "Все скины уже куплены!"
+            message_text = "Все скины уже куплены! Загляните позже."
             message = message_font.render(message_text, True, self.colors["text_dark"])
             screen.blit(message, (rect.centerx - message.get_width()//2, rect.centery))
+            
+            # Добавляем подсказку
+            hint_font = self.get_font(16)
+            hint_text = "В будущем будут добавлены новые скины!"
+            hint = hint_font.render(hint_text, True, self.colors["text_dark"])
+            screen.blit(hint, (rect.centerx - hint.get_width()//2, rect.centery + self.s(30)))
             return
         
         skin = self.skins_for_sale[self.selected_skin_index]
