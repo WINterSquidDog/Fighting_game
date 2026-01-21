@@ -31,27 +31,18 @@ def resource_path(relative_path):
     return os.path.join(base_path, relative_path)
 
 def main():
+    # Инициализация проект
     pygame.init()
     pygame.mixer.init()
-    print("🔧 Запуск игры...")
-    # Сначала загружаем настройки
+    # Загрузка настроек
     settings_manager = SettingsManager()
-    print("🎮 Загруженные настройки:")
-    print(f"  Разрешение: {settings_manager.current_settings['resolution']}")
-    print(f"  Полный экран: {settings_manager.current_settings['fullscreen']}")
-    print(f"  Громкость музыки: {settings_manager.current_settings['music_volume']}")
-    print("🌐 Доступные языки:", settings_manager.language_manager.available_languages)
-    print("🌐 Текущий язык:", settings_manager.current_settings["language"])
     # Создаем экран с настройками
     screen = settings_manager.apply_graphics_settings()
     if not screen:
-        print("❌ Не удалось применить настройки графики, используем по умолчанию")
         screen = pygame.display.set_mode(settings_manager.base_resolution)
         settings_manager.update_scale_factor(settings_manager.base_resolution[0])
     
-    print(f"🖥️ Создан экран: {screen.get_size()}")
-    
-    pygame.display.set_caption("Fighting Game")
+    pygame.display.set_caption("Villian War")
     clock = pygame.time.Clock()
 
     # Core systems с настройками
@@ -66,7 +57,7 @@ def main():
     gm.screen = screen
     gm.save_manager = save_manager
     gm.skin_manager = skin_manager
-    # Регистрируем сцены
+    # Регистрация сцен
     gm.register_scene("loading", LoadingScene(gm))
     gm.register_scene("menu", MenuScene(gm))
     gm.register_scene("settings", SettingsScene(gm))
@@ -75,9 +66,9 @@ def main():
     gm.register_scene("victory", None)
     gm.register_scene("shop", ShopScene(gm))
 
-    # Начинаем с загрузки
+    # Выставление первой сцены
     gm.set_scene("loading")
-
+    # Игровой цикл
     running = True
     while running:
         dt = clock.tick(60) / 1000.0
@@ -94,7 +85,7 @@ def main():
         gm.draw(screen)
         pygame.display.flip()
 
-    # Сохраняем настройки при выходе
+    # Сохранение настроек при выходе
     settings_manager.save_settings()
     pygame.quit()
 

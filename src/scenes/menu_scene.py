@@ -5,7 +5,7 @@ import sys
 from src.managers.game_manager import BaseScene
 from src.managers.save_manager import SaveManager
 from src.managers.skin_manager import SkinManager
-from src.core.animations import VideoAnimation, resource_path  # ДОБАВЛЕНО
+from src.core.animations import VideoAnimation, resource_path
 
 # Функция для получения корректного пути к ресурсам в pyinstaller
 def resource_path(relative_path):
@@ -40,7 +40,8 @@ class MenuScene(BaseScene):
             "text_dark": (200, 200, 200),
             "accent": (255, 215, 0),
             "danger": (255, 80, 80),
-            "selected": (100, 255, 100)
+            "selected": (100, 255, 100),
+            "training": (180, 100, 255)  # Новый цвет для режима тренировки
         }
         
         # Данные игрока из сохранения
@@ -158,6 +159,14 @@ class MenuScene(BaseScene):
         self.selection_confirmed_time = 0
         self.show_selection_confirmed = False
         
+        # 🎮 ДОБАВЛЕНО: Режимы игры
+        self.game_modes = [
+            {"id": "vs_bot", "name": "VS BOT"},
+            {"id": "training", "name": "ТРЕНИРОВКА"}
+        ]  # Режимы игры как массив словарей
+        self.selected_game_mode = 0  # 0 - VS BOT, 1 - Тренировка
+        self.mode_selecting = False  # Режим выбора режима игры
+        
         # Загружаем тексты и карточки
         self._refresh_texts()
         self.music_started = False
@@ -185,6 +194,23 @@ class MenuScene(BaseScene):
         self.save_manager.load_save()  # Перезагружаем сохранения
         self.player_data["coins"] = self.save_manager.get_coins()
         self.player_data["trophies"] = self.save_manager.get_trophies()
+        
+        last_mode_id = self.save_manager.get_last_game_mode()  # Теперь получаем id
+        print(f"🎮 Восстанавливаем режим игры по id: {last_mode_id}")
+        
+        # Находим индекс восстановленного режима по id
+        mode_found = False
+        for i, mode in enumerate(self.game_modes):
+            if mode["id"] == last_mode_id:  # Сравниваем по id
+                self.selected_game_mode = i
+                print(f"✅ Восстановлен режим: {mode['name']} (id: {mode['id']})")
+                mode_found = True
+                break
+        
+        if not mode_found:
+            # Если режим не найден, выбираем первый
+            self.selected_game_mode = 0
+            print(f"⚠️ Режим с id '{last_mode_id}' не найден, используем первый")
         
         # ОБНОВЛЯЕМ СТАТУС РАЗБЛОКИРОВКИ СКИНОВ ИЗ СОХРАНЕНИЙ
         print("🔄 Обновление статуса скинов из сохранений...")
@@ -448,6 +474,12 @@ class MenuScene(BaseScene):
         
         for cameo in self.cameos:
             cameo["description"] = self.gm.settings.get_text(f"cameo_{cameo['name'].lower()}_desc")
+        
+        # 🎮 Обновляем названия режимов игры
+        self.game_modes = [
+            {"id": "vs_bot", "name": self.gm.settings.get_text("vs_bot", "VS BOT")},
+            {"id": "training", "name": self.gm.settings.get_text("training", "ТРЕНИРОВКА")}
+        ]
     
     def handle_events(self, events):
         mouse_pos = pygame.mouse.get_pos()
@@ -456,7 +488,10 @@ class MenuScene(BaseScene):
             if event.type == pygame.KEYDOWN:
                 # ФИКС: ESC должен выходить из любого режима
                 if event.key == pygame.K_ESCAPE:
-                    if self.skin_selecting_mode:
+                    if self.mode_selecting:
+                        self.mode_selecting = False
+                        print("🚪 Выход из режима выбора режима игры (ESC)")
+                    elif self.skin_selecting_mode:
                         self.skin_selecting_mode = False
                         print("🚪 Выход из режима выбора скина (ESC)")
                     elif self.selecting_mode:
@@ -466,7 +501,7 @@ class MenuScene(BaseScene):
                         self._exit_game()
                     return
                 
-                if not self.selecting_mode and not self.show_selection_confirmed and not self.skin_selecting_mode:
+                if not self.selecting_mode and not self.show_selection_confirmed and not self.skin_selecting_mode and not self.mode_selecting:
                     if event.key == pygame.K_LEFT:
                         self.current_section = (self.current_section - 1) % len(self.sections)
                         if self.current_section == 3:  # SKINS
@@ -514,6 +549,20 @@ class MenuScene(BaseScene):
                                 self.skin_selecting_mode = True
                                 print("🎯 Вход в режим выбора скина")
                 
+                # 🎮 Обработка режима выбора режима игры
+                elif self.mode_selecting and not self.show_selection_confirmed:
+                    if event.key == pygame.K_RETURN:
+                        self._select_game_mode()
+                    elif event.key == pygame.K_ESCAPE:
+                        self.mode_selecting = False
+                        print("🚪 Выход из режима выбора режима игры")
+                    elif event.key in [pygame.K_a, pygame.K_LEFT, pygame.K_UP]:
+                        self.selected_game_mode = (self.selected_game_mode - 1) % len(self.game_modes)
+                        print(f"⬅️ Смена режима: {self.game_modes[self.selected_game_mode]['name']}")
+                    elif event.key in [pygame.K_d, pygame.K_RIGHT, pygame.K_DOWN]:
+                        self.selected_game_mode = (self.selected_game_mode + 1) % len(self.game_modes)
+                        print(f"➡️ Смена режима: {self.game_modes[self.selected_game_mode]['name']}")
+                
                 # ФИКС: В режиме выбора скина должны работать стрелки навигации и ESC
                 elif self.skin_selecting_mode and not self.show_selection_confirmed:
                     if event.key == pygame.K_RETURN:
@@ -554,7 +603,7 @@ class MenuScene(BaseScene):
         if self.show_selection_confirmed:
             return
             
-        if not self.selecting_mode and not self.skin_selecting_mode:
+        if not self.selecting_mode and not self.skin_selecting_mode and not self.mode_selecting:
             # Клики по вкладкам
             for i, tab_rect in enumerate(self.tab_buttons):
                 if tab_rect.collidepoint(mouse_pos):
@@ -603,6 +652,11 @@ class MenuScene(BaseScene):
                 elif self.skin_select_btn and self.skin_select_btn.collidepoint(mouse_pos):
                     self.skin_selecting_mode = True
             
+            # 🎮 Обработка кнопки выбора режима игры
+            elif self.current_section == 0 and self.mode_button and self.mode_button.collidepoint(mouse_pos):
+                self.mode_selecting = True
+                print(f"🎮 Вход в режим выбора режима игры")
+            
             # Обработка кнопок в секции FIGHT
             elif self.current_section == 0 and self.battle_button and self.battle_button.collidepoint(mouse_pos):
                 self._start_battle()
@@ -618,6 +672,11 @@ class MenuScene(BaseScene):
             # Подтверждение выбора скина
             if self.current_section == 3 and self.skin_select_btn and self.skin_select_btn.collidepoint(mouse_pos):
                 self._select_skin()
+        
+        elif self.mode_selecting:
+            # Подтверждение выбора режима игры
+            if self.current_section == 0 and self.mode_button and self.mode_button.collidepoint(mouse_pos):
+                self._select_game_mode()
     
     def _refresh_current_skins(self):
         """Обновляет список текущих скинов при смене таба"""
@@ -732,6 +791,19 @@ class MenuScene(BaseScene):
         self.show_selection_confirmed = True
         self.skin_selecting_mode = False  # Выходим из режима выбора
 
+    def _select_game_mode(self):
+        """🎮 Сохраняет выбранный режим игры"""
+        selected_mode = self.game_modes[self.selected_game_mode]
+        print(f"🎮 Выбран режим игры: {selected_mode['name']}")
+        
+        # Сохраняем в сохранения ID режима (строчные)
+        self.save_manager.save_game(game_mode=selected_mode["id"])  # Используем id
+        
+        self.selection_confirmed_time = pygame.time.get_ticks()
+        self.show_selection_confirmed = True
+        self.mode_selecting = False
+        print(f"✅ Режим '{selected_mode['name']}' сохранен (id: {selected_mode['id']})")
+
     def _start_battle(self):
         selected_char = next((char for char in self.characters if char["selected"]), None)
         selected_cameo = next((cameo for cameo in self.cameos if cameo["selected"]), None)
@@ -745,8 +817,12 @@ class MenuScene(BaseScene):
             
         char_name = selected_char["name"]
         cameo_name = selected_cameo["name"]
-        print(f"🎮 Запуск боя: {char_name} + {cameo_name}")
-        self._create_game_scenes(char_name, cameo_name)
+        game_mode = self.game_modes[self.selected_game_mode]
+        
+        print(f"🎮 Запуск боя: {char_name} + {cameo_name} | Режим: {game_mode['name']}")
+        
+        # 🎮 Передаем выбранный режим в игровые сцены
+        self._create_game_scenes(char_name, cameo_name, game_mode)
         
         from src.scenes.loading_scene import LoadingScene
         loading_scene = LoadingScene(self.gm, "intro")
@@ -764,7 +840,7 @@ class MenuScene(BaseScene):
     def _exit_game(self):
         pygame.event.post(pygame.event.Event(pygame.QUIT))
     
-    def _create_game_scenes(self, char_name, cameo_name):
+    def _create_game_scenes(self, char_name, cameo_name, game_mode):
         from src.core.character import Character
         from src.scenes.intro_scene import IntroSequenceScene
         from src.scenes.battle_scene import BattleScene
@@ -775,9 +851,12 @@ class MenuScene(BaseScene):
         player_cameo = Character(cameo_name, self.gm.resources)
         enemy_cameo = Character("cameo_right", self.gm.resources)
         
-        self.gm.register_scene("intro", IntroSequenceScene(self.gm, player_char, player_cameo, enemy_char, enemy_cameo))
-        self.gm.register_scene("battle", BattleScene(self.gm, player_char, enemy_char))
-        self.gm.register_scene("victory", VictoryScene(self.gm, None))
+        # 🎮 Создаем интро сцену с передачей режима игры
+        self.gm.register_scene("intro", IntroSequenceScene(
+            self.gm, player_char, player_cameo, enemy_char, enemy_cameo, game_mode
+        ))
+        self.gm.register_scene("battle", BattleScene(self.gm, player_char, enemy_char, game_mode))
+        self.gm.register_scene("victory", VictoryScene(self.gm, None, game_mode))
     
     def update(self, dt):
         """Обновление сцены"""
@@ -794,6 +873,7 @@ class MenuScene(BaseScene):
                 self.show_selection_confirmed = False
                 self.selecting_mode = False
                 self.skin_selecting_mode = False
+                self.mode_selecting = False  # 🎮 Сбрасываем режим выбора режима
                 # Автоматически возвращаемся на вкладку FIGHT после подтверждения выбора
                 self.current_section = 0
         
@@ -962,7 +1042,7 @@ class MenuScene(BaseScene):
                                    tab_rect.centery - final_text.get_height() // 2))
 
     def _draw_fight_section(self, screen, rect):
-        """Секция FIGHT - основной экран с АНИМИРОВАННЫМИ АРТАМИ"""
+        """Секция FIGHT - основной экран с АНИМИРОВАННЫМИ АРТАМИ и выбором режима"""
         # Показываем выбранные персонаж и камео
         selected_char = next((char for char in self.characters if char["selected"]), None)
         selected_cameo = next((cameo for cameo in self.cameos if cameo["selected"]), None)
@@ -1002,7 +1082,7 @@ class MenuScene(BaseScene):
                 if cameo_animation not in self.playing_animations:
                     self.playing_animations.append(cameo_animation)
         
-        # Кнопка выбора режима (нерабочая) - внизу по центру
+        # 🎮 Кнопка выбора режима - внизу по центру
         mode_btn_width = self.s(220)
         mode_btn_height = self.s(60)
         self.mode_button = pygame.Rect(
@@ -1012,13 +1092,29 @@ class MenuScene(BaseScene):
             mode_btn_height
         )
         
-        pygame.draw.rect(screen, self.colors["button_secondary"], self.mode_button, border_radius=self.s(12))
+        # Определяем цвет кнопки в зависимости от выбранного режима и состояния
+        if self.mode_selecting:
+            btn_color = self.colors["selected"]
+        elif self.selected_game_mode == 1:  # Тренировка
+            btn_color = self.colors["training"]
+        else:  # VS BOT
+            btn_color = self.colors["button_secondary"]
+        
+        pygame.draw.rect(screen, btn_color, self.mode_button, border_radius=self.s(12))
         pygame.draw.rect(screen, self.colors["text_light"], self.mode_button, self.s(2), border_radius=self.s(12))
         
         mode_font = self.get_font(20, bold=True)
-        mode_text = mode_font.render("VS BOT", True, self.colors["text_light"])
+        mode_text = mode_font.render(self.game_modes[self.selected_game_mode]["name"], True, self.colors["text_light"])
         screen.blit(mode_text, (self.mode_button.centerx - mode_text.get_width() // 2,
                               self.mode_button.centery - mode_text.get_height() // 2))
+        
+        # 🎮 Подсказка для выбора режима (если мы в режиме выбора)
+        if self.mode_selecting:
+            hint_font = self.get_font(15)
+            hint_text = "Используйте ←→ или кликните для выбора режима"
+            hint = hint_font.render(hint_text, True, self.colors["text_dark"])
+            screen.blit(hint, (rect.centerx - hint.get_width() // 2, 
+                             self.mode_button.top - self.s(25)))
         
         # Кнопка начала боя - внизу справа
         btn_width = self.s(200)
@@ -1032,235 +1128,214 @@ class MenuScene(BaseScene):
         battle_enabled = selected_char and selected_cameo
         
         if battle_enabled:
+            # 🎮 Меняем текст кнопки в зависимости от режима
+            btn_text = "НАЧАТЬ!" if self.selected_game_mode == 0 else "ТРЕНИРОВАТЬСЯ!"
             pygame.draw.rect(screen, self.colors["button_primary"], self.battle_button, border_radius=self.s(12))
             pygame.draw.rect(screen, self.colors["accent"], self.battle_button, self.s(3), border_radius=self.s(12))
         else:
+            btn_text = "FIGHT!"
             pygame.draw.rect(screen, (100, 100, 100), self.battle_button, border_radius=self.s(12))
             pygame.draw.rect(screen, (150, 150, 150), self.battle_button, self.s(3), border_radius=self.s(12))
         
         btn_font = self.get_font(22, bold=True)
-        btn_text = btn_font.render("FIGHT!", True, 
-                                 self.colors["text_light"] if battle_enabled else self.colors["text_dark"])
-        screen.blit(btn_text, (self.battle_button.centerx - btn_text.get_width() // 2,
-                             self.battle_button.centery - btn_text.get_height() // 2))
-
-        btn_height = self.s(60)
-        self.battle_button = pygame.Rect(
-            rect.right - btn_width - self.s(50),
-            rect.bottom - btn_height - self.s(30),
-            btn_width,
-            btn_height
-        )
-        battle_enabled = selected_char and selected_cameo
-        
-        if battle_enabled:
-            pygame.draw.rect(screen, self.colors["button_primary"], self.battle_button, border_radius=self.s(12))
-            pygame.draw.rect(screen, self.colors["accent"], self.battle_button, self.s(3), border_radius=self.s(12))
-        else:
-            pygame.draw.rect(screen, (100, 100, 100), self.battle_button, border_radius=self.s(12))
-            pygame.draw.rect(screen, (150, 150, 150), self.battle_button, self.s(3), border_radius=self.s(12))
-        
-        btn_font = self.get_font(22, bold=True)
-        btn_text = btn_font.render("FIGHT!", True, 
-                                 self.colors["text_light"] if battle_enabled else self.colors["text_dark"])
-        screen.blit(btn_text, (self.battle_button.centerx - btn_text.get_width() // 2,
-                             self.battle_button.centery - btn_text.get_height() // 2))
+        btn_render = btn_font.render(btn_text, True, 
+                                   self.colors["text_light"] if battle_enabled else self.colors["text_dark"])
+        screen.blit(btn_render, (self.battle_button.centerx - btn_render.get_width() // 2,
+                               self.battle_button.centery - btn_render.get_height() // 2))
 
     def _load_art_animation(self, entity_name, skin_id, art_size):
-            """🎬 Загружает видео-анимацию арта с учетом скина"""
-            cache_key = f"{entity_name.lower()}_{skin_id}_{art_size}"
-            
-            # Проверяем кэш
-            if cache_key in self.art_animations:
-                return self.art_animations[cache_key]
-            
-            # Основной путь к видео: Sprites/arts/{имя}_{скин}_art.mp4
-            video_path = os.path.join("Sprites", "arts", f"{entity_name.lower()}_{skin_id}_art.mp4")
-            
-            animation = None
-            
-            try:
-                # Используем resource_path для корректной работы в .exe
-                actual_path = resource_path(video_path)
-                if os.path.exists(actual_path):
-                    print(f"🎬 Загружаем видео арт: {video_path}")
+        """🎬 Загружает видео-анимацию арта с учетом скина"""
+        cache_key = f"{entity_name.lower()}_{skin_id}_{art_size}"
+        
+        # Проверяем кэш
+        if cache_key in self.art_animations:
+            return self.art_animations[cache_key]
+        
+        # Основной путь к видео: Sprites/arts/{имя}_{скин}_art.mp4
+        video_path = os.path.join("Sprites", "arts", f"{entity_name.lower()}_{skin_id}_art.mp4")
+        
+        animation = None
+        
+        try:
+            # Используем resource_path для корректной работы в .exe
+            actual_path = resource_path(video_path)
+            if os.path.exists(actual_path):
+                print(f"🎬 Загружаем видео арт: {video_path}")
+                
+                # Рассчитываем целевой размер с сохранением пропорций 704x1280
+                # Пропорции: 704 / 1280 ≈ 0.55 (ширина/высота)
+                original_width = 704   # Ширина оригинала
+                original_height = 1280 # Высота оригинала
+                
+                # Сохраняем пропорции видео (портретный формат)
+                # Подгоняем под квадрат art_size
+                if art_size > 0:
+                    # Вычисляем масштаб по высоте (лимитирующая сторона)
+                    scale_factor = art_size / original_height
+                    target_width = int(original_width * scale_factor)
+                    target_height = art_size  # Высота равна art_size
                     
-                    # Рассчитываем целевой размер с сохранением пропорций 704x1280
-                    # Пропорции: 704 / 1280 ≈ 0.55 (высота/ширина)
-                    original_width = 704   # Ширина оригинала
-                    original_height = 1280 # Высота оригинала
-                    
-                    # Сохраняем пропорции видео (портретный формат)
-                    # Подгоняем под квадрат art_size
-                    if art_size > 0:
-                        # Вычисляем масштаб по максимальной стороне
-                        # Так как видео портретное, лимитируем по высоте
-                        scale_factor = art_size / original_height
-                        target_width = int(original_width * scale_factor)
-                        target_height = art_size  # Высота равна art_size
-                        
-                        # Центрируем по горизонтали (оставляем место по бокам)
-                        # Видео будет уже чем квадрат, поэтому центрируем
-                        target_size = (target_width, target_height)
-                    else:
-                        target_size = None
-                    
-                    print(f"📐 Масштабирование: {original_width}x{original_height} -> {target_size}")
-                    
-                    animation = VideoAnimation(
-                        video_path=video_path,
-                        target_size=target_size,
-                        loop=True,  # Зацикленное воспроизведение
-                        fps=30  # Можно не указывать, будет взято из видео
-                    )
-                    print(f"✅ Видео загружено: {len(animation.frames)} кадров, FPS: {animation.fps}")
+                    # Видео будет уже чем квадрат, поэтому центрируем
+                    target_size = (target_width, target_height)
                 else:
-                    print(f"❌ Видео не найдено: {actual_path}")
-                    # Пробуем альтернативные пути (для обратной совместимости)
-                    alternative_paths = [
-                        os.path.join("Sprites", "arts", f"{entity_name.lower()}_art.mp4"),
-                        os.path.join("Sprites", "arts", entity_name.lower(), f"{skin_id}_art.mp4"),
-                        os.path.join("Sprites", "arts", entity_name.lower(), "default_art.mp4"),
-                    ]
+                    target_size = None
+                
+                print(f"📐 Масштабирование: {original_width}x{original_height} -> {target_size}")
+                
+                animation = VideoAnimation(
+                    video_path=video_path,
+                    target_size=target_size,
+                    loop=True,  # Зацикленное воспроизведение
+                    fps=30  # Можно не указывать, будет взято из видео
+                )
+                print(f"✅ Видео загружено: {len(animation.frames)} кадров, FPS: {animation.fps}")
+            else:
+                print(f"❌ Видео не найдено: {actual_path}")
+                # Пробуем альтернативные пути (для обратной совместимости)
+                alternative_paths = [
+                    os.path.join("Sprites", "arts", f"{entity_name.lower()}_art.mp4"),
+                    os.path.join("Sprites", "arts", entity_name.lower(), f"{skin_id}_art.mp4"),
+                    os.path.join("Sprites", "arts", entity_name.lower(), "default_art.mp4"),
+                ]
+                
+                for alt_path in alternative_paths:
+                    alt_actual_path = resource_path(alt_path)
+                    if os.path.exists(alt_actual_path):
+                        print(f"🎬 Найдено альтернативное видео: {alt_path}")
+                        # Используем то же масштабирование
+                        if art_size > 0:
+                            scale_factor = art_size / 1280
+                            target_width = int(704 * scale_factor)
+                            target_height = art_size
+                            target_size = (target_width, target_height)
+                        else:
+                            target_size = None
+                        
+                        animation = VideoAnimation(
+                            video_path=alt_path,
+                            target_size=target_size,
+                            loop=True,
+                            fps=30
+                        )
+                        print(f"✅ Альтернативное видео загружено")
+                        break
+                
+        except Exception as e:
+            print(f"⚠️ Ошибка загрузки видео {video_path}: {e}")
+        
+        # Если видео не найдено, создаем анимацию из статичного изображения
+        if animation is None:
+            print(f"⚠️ Видео для {entity_name}_{skin_id} не найдено, используем статичный арт")
+            static_image = self._load_static_art_image(entity_name, skin_id, art_size)
+            if static_image:
+                # Рассчитываем размер для статичного изображения с теми же пропорциями
+                if art_size > 0:
+                    # Сохраняем пропорции оригинала
+                    original_width, original_height = static_image.get_size()
+                    scale_factor = art_size / original_height
+                    target_width = int(original_width * scale_factor)
+                    target_height = art_size
                     
-                    for alt_path in alternative_paths:
-                        alt_actual_path = resource_path(alt_path)
-                        if os.path.exists(alt_actual_path):
-                            print(f"🎬 Найдено альтернативное видео: {alt_path}")
-                            # Используем то же масштабирование
-                            if art_size > 0:
-                                scale_factor = art_size / 1280
-                                target_width = int(704 * scale_factor)
-                                target_height = art_size
-                                target_size = (target_width, target_height)
-                            else:
-                                target_size = None
-                            
-                            animation = VideoAnimation(
-                                video_path=alt_path,
-                                target_size=target_size,
-                                loop=True,
-                                fps=30
-                            )
-                            print(f"✅ Альтернативное видео загружено")
-                            break
+                    # Масштабируем изображение
+                    static_image = pygame.transform.scale(static_image, (target_width, target_height))
+                
+                # Создаем анимацию из одного кадра
+                animation = VideoAnimation(
+                    video_path="",  # Пустой путь
+                    target_size=(target_width, target_height) if art_size > 0 else None,
+                    loop=True,
+                    fps=1
+                )
+                # Заменяем кадры на статичное изображение
+                animation.frames = [static_image] * 30  # 30 одинаковых кадров для плавности
+                animation.fps = 30
+                print(f"🖼️ Используем статичный арт: {entity_name}/{skin_id} ({target_width}x{target_height})")
+            else:
+                # Создаем заглушку с пропорциями 704x1280
+                if art_size > 0:
+                    scale_factor = art_size / 1280
+                    placeholder_width = int(704 * scale_factor)
+                    placeholder_height = art_size
+                else:
+                    placeholder_width = 704
+                    placeholder_height = 1280
+                
+                placeholder = self._create_placeholder_art(entity_name, placeholder_width, placeholder_height)
+                animation = VideoAnimation(
+                    video_path="",
+                    target_size=(placeholder_width, placeholder_height) if art_size > 0 else None,
+                    loop=True,
+                    fps=1
+                )
+                animation.frames = [placeholder] * 30
+                animation.fps = 30
+                print(f"⚠️ Создана заглушка для: {entity_name}/{skin_id} ({placeholder_width}x{placeholder_height})")
+        
+        # Сохраняем в кэш
+        self.art_animations[cache_key] = animation
+        return animation
+    
+    def _load_static_art_image(self, entity_name, skin_id, art_size):
+        """Загружает статичное изображение арта (для обратной совместимости)"""
+        # Пробуем разные пути к изображениям
+        image_paths = [
+            os.path.join("Sprites", "arts", f"{entity_name.lower()}_{skin_id}.png"),
+            os.path.join("Sprites", "arts", f"{entity_name.lower()}_{skin_id}.jpg"),
+            os.path.join("Sprites", "arts", f"{entity_name.lower()}.png"),
+            os.path.join("Sprites", "arts", f"{entity_name.lower()}.jpg"),
+            os.path.join("Sprites", "arts", entity_name.lower(), f"{skin_id}.png"),
+            os.path.join("Sprites", "arts", entity_name.lower(), "default.png"),
+        ]
+        
+        for img_path in image_paths:
+            try:
+                actual_path = resource_path(img_path)
+                if os.path.exists(actual_path):
+                    print(f"🖼️ Загружаем статичный арт: {img_path}")
+                    image = pygame.image.load(actual_path).convert_alpha()
                     
-            except Exception as e:
-                print(f"⚠️ Ошибка загрузки видео {video_path}: {e}")
-            
-            # Если видео не найдено, создаем анимацию из статичного изображения
-            if animation is None:
-                print(f"⚠️ Видео для {entity_name}_{skin_id} не найдено, используем статичный арт")
-                static_image = self._load_static_art_image(entity_name, skin_id, art_size)
-                if static_image:
-                    # Рассчитываем размер для статичного изображения с теми же пропорциями
+                    # Масштабируем с сохранением пропорций как у видео 704x1280
                     if art_size > 0:
-                        # Сохраняем пропорции оригинала
-                        original_width, original_height = static_image.get_size()
-                        scale_factor = art_size / original_height
+                        original_width, original_height = image.get_size()
+                        
+                        # Сохраняем пропорции как у видео (портретный формат)
+                        # Высота фиксированная = art_size, ширина пропорциональная
+                        scale_factor = art_size / max(original_height, 1)  # избегаем деления на 0
                         target_width = int(original_width * scale_factor)
                         target_height = art_size
                         
-                        # Масштабируем изображение
-                        static_image = pygame.transform.scale(static_image, (target_width, target_height))
+                        image = pygame.transform.scale(image, (target_width, target_height))
+                        print(f"✅ Статичный арт загружен и масштабирован: {target_width}x{target_height}")
                     
-                    # Создаем анимацию из одного кадра
-                    animation = VideoAnimation(
-                        video_path="",  # Пустой путь
-                        target_size=(target_width, target_height) if art_size > 0 else None,
-                        loop=True,
-                        fps=1
-                    )
-                    # Заменяем кадры на статичное изображение
-                    animation.frames = [static_image] * 30  # 30 одинаковых кадров для плавности
-                    animation.fps = 30
-                    print(f"🖼️ Используем статичный арт: {entity_name}/{skin_id} ({target_width}x{target_height})")
-                else:
-                    # Создаем заглушку с пропорциями 704x1280
-                    if art_size > 0:
-                        scale_factor = art_size / 1280
-                        placeholder_width = int(704 * scale_factor)
-                        placeholder_height = art_size
-                    else:
-                        placeholder_width = 704
-                        placeholder_height = 1280
-                    
-                    placeholder = self._create_placeholder_art(entity_name, placeholder_width, placeholder_height)
-                    animation = VideoAnimation(
-                        video_path="",
-                        target_size=(placeholder_width, placeholder_height) if art_size > 0 else None,
-                        loop=True,
-                        fps=1
-                    )
-                    animation.frames = [placeholder] * 30
-                    animation.fps = 30
-                    print(f"⚠️ Создана заглушка для: {entity_name}/{skin_id} ({placeholder_width}x{placeholder_height})")
-            
-            # Сохраняем в кэш
-            self.art_animations[cache_key] = animation
-            return animation
-    
-    def _load_static_art_image(self, entity_name, skin_id, art_size):
-            """Загружает статичное изображение арта (для обратной совместимости)"""
-            # Пробуем разные пути к изображениям
-            image_paths = [
-                os.path.join("Sprites", "arts", f"{entity_name.lower()}_{skin_id}.png"),
-                os.path.join("Sprites", "arts", f"{entity_name.lower()}_{skin_id}.jpg"),
-                os.path.join("Sprites", "arts", f"{entity_name.lower()}.png"),
-                os.path.join("Sprites", "arts", f"{entity_name.lower()}.jpg"),
-                os.path.join("Sprites", "arts", entity_name.lower(), f"{skin_id}.png"),
-                os.path.join("Sprites", "arts", entity_name.lower(), "default.png"),
-            ]
-            
-            for img_path in image_paths:
-                try:
-                    actual_path = resource_path(img_path)
-                    if os.path.exists(actual_path):
-                        print(f"🖼️ Загружаем статичный арт: {img_path}")
-                        image = pygame.image.load(actual_path).convert_alpha()
-                        
-                        # Масштабируем с сохранением пропорций как у видео 704x1280
-                        if art_size > 0:
-                            original_width, original_height = image.get_size()
-                            
-                            # Сохраняем пропорции как у видео (портретный формат)
-                            # Высота фиксированная = art_size, ширина пропорциональная
-                            scale_factor = art_size / max(original_height, 1)  # избегаем деления на 0
-                            target_width = int(original_width * scale_factor)
-                            target_height = art_size
-                            
-                            image = pygame.transform.scale(image, (target_width, target_height))
-                            print(f"✅ Статичный арт загружен и масштабирован: {target_width}x{target_height}")
-                        
-                        return image
-                except Exception as e:
-                    print(f"⚠️ Ошибка загрузки изображения {img_path}: {e}")
-                    continue
-            
-            return None
+                    return image
+            except Exception as e:
+                print(f"⚠️ Ошибка загрузки изображения {img_path}: {e}")
+                continue
+        
+        return None
 
     def _create_placeholder_art(self, filename, width, height):
-            """Создание заглушки для арта с указанными размерами"""
-            art = pygame.Surface((width, height), pygame.SRCALPHA)
-            art.fill((80, 80, 150, 255))
-            
-            border = max(3, min(width, height) // 40)
-            pygame.draw.rect(art, (255, 255, 255), (border, border, width-2*border, height-2*border), border)
-            
-            placeholder_font = pygame.font.SysFont("arial", max(20, min(width, height)//15), bold=True)
-            placeholder_text = placeholder_font.render("АРТ", True, (255, 255, 255))
-            art.blit(placeholder_text, (width//2 - placeholder_text.get_width()//2, height//3))
-            
-            name_font = pygame.font.SysFont("arial", max(14, min(width, height)//20))
-            name_text = name_font.render(filename, True, (200, 200, 200))
-            art.blit(name_text, (width//2 - name_text.get_width()//2, height//2))
-            
-            # Добавляем информацию о пропорциях
-            ratio_font = pygame.font.SysFont("arial", max(12, min(width, height)//25))
-            ratio_text = ratio_font.render(f"{width}x{height} (704x1280)", True, (150, 150, 200))
-            art.blit(ratio_text, (width//2 - ratio_text.get_width()//2, height*2//3))
-            
-            return art
+        """Создание заглушки для арта с указанными размерами"""
+        art = pygame.Surface((width, height), pygame.SRCALPHA)
+        art.fill((80, 80, 150, 255))
+        
+        border = max(3, min(width, height) // 40)
+        pygame.draw.rect(art, (255, 255, 255), (border, border, width-2*border, height-2*border), border)
+        
+        placeholder_font = pygame.font.SysFont("arial", max(20, min(width, height)//15), bold=True)
+        placeholder_text = placeholder_font.render("АРТ", True, (255, 255, 255))
+        art.blit(placeholder_text, (width//2 - placeholder_text.get_width()//2, height//3))
+        
+        name_font = pygame.font.SysFont("arial", max(14, min(width, height)//20))
+        name_text = name_font.render(filename, True, (200, 200, 200))
+        art.blit(name_text, (width//2 - name_text.get_width()//2, height//2))
+        
+        # Добавляем информацию о пропорциях
+        ratio_font = pygame.font.SysFont("arial", max(12, min(width, height)//25))
+        ratio_text = ratio_font.render(f"{width}x{height}", True, (150, 150, 200))
+        art.blit(ratio_text, (width//2 - ratio_text.get_width()//2, height*2//3))
+        
+        return art
     
     def _draw_characters_section(self, screen, rect):
         """Секция выбора персонажей - упрощенная логика карточек"""

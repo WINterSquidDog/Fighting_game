@@ -32,13 +32,12 @@ def load_video_frames(video_path: str, target_size: Tuple[int, int] = None,
         Tuple[List[pygame.Surface], int]: список кадров и FPS
     """
     frames = []
-    fps = 30  # значение по умолчанию
+    fps = 60  # значение по умолчанию
     
     # Проверяем существование файла с учетом resource_path
     actual_path = resource_path(video_path)
     
     if not os.path.exists(actual_path):
-        print(f"⚠️ Видео не найдено: {actual_path}")
         # Создаем заглушку
         if target_size:
             placeholder = pygame.Surface(target_size, pygame.SRCALPHA)
@@ -66,7 +65,6 @@ def load_video_frames(video_path: str, target_size: Tuple[int, int] = None,
         cap = cv2.VideoCapture(actual_path)
         
         if not cap.isOpened():
-            print(f"❌ Не удалось открыть видео: {actual_path}")
             return frames, fps
         
         # Получаем FPS видео
