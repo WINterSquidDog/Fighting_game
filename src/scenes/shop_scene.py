@@ -17,7 +17,11 @@ def resource_path(relative_path):
 class ShopScene(BaseScene):
     def __init__(self, gm):
         super().__init__(gm)
-        
+        self.icons = {
+            "coin": self.load_icon("coin_icon", 24),
+            "trophy": self.load_icon("trophy_icon", 24),
+            "currency": self.load_icon("currency_icon", 40)  # Для вкладки валюты
+        }
         # Цветовая схема
         self.colors = {
             "background": (20, 20, 40),
@@ -53,10 +57,10 @@ class ShopScene(BaseScene):
         
         # Валюта для продажи - ТЕСТОВАЯ ВЕРСИЯ
         self.currency_packs = [
-            {"name": "ТЕСТОВЫЙ НАБОР 1", "coins": 100, "price": 0, "icon": "💰", "real_price": 0},
-            {"name": "ТЕСТОВЫЙ НАБОР 2", "coins": 500, "price": 0, "icon": "💰💰", "real_price": 0},
-            {"name": "ТЕСТОВЫЙ НАБОР 3", "coins": 1000, "price": 0, "icon": "💰💰💰", "real_price": 0},
-            {"name": "ТЕСТОВЫЙ НАБОР 4", "coins": 5000, "price": 0, "icon": "👑", "real_price": 0},
+            {"name": "ТЕСТОВЫЙ НАБОР 1", "coins": 100, "price": 0, "real_price": 0},
+            {"name": "ТЕСТОВЫЙ НАБОР 2", "coins": 500, "price": 0, "real_price": 0},
+            {"name": "ТЕСТОВЫЙ НАБОР 3", "coins": 1000, "price": 0, "real_price": 0},
+            {"name": "ТЕСТОВЫЙ НАБОР 4", "coins": 5000, "price": 0, "real_price": 0},
         ]
         self.selected_currency_index = 0
         
@@ -510,11 +514,16 @@ class ShopScene(BaseScene):
         
         # Ресурсы игрока
         resource_font = self.get_font(18)
-        coins_text = resource_font.render(f"🪙 {self.player_coins}", True, (255, 215, 0))
-        trophies_text = resource_font.render(f"🏆 {self.player_trophies}", True, (255, 200, 100))
-        
-        screen.blit(coins_text, (screen.get_width() - self.s(150), self.s(25)))
-        screen.blit(trophies_text, (screen.get_width() - self.s(150), self.s(50)))
+        coins_icon = self.icons["coin"]
+        screen.blit(coins_icon, (screen.get_width() - self.s(150), self.s(25)))
+        coins_text = resource_font.render(f"{self.player_coins}", True, (255, 215, 0))
+        screen.blit(coins_text, (screen.get_width() - self.s(150) + coins_icon.get_width() + 5, self.s(25)))
+
+        # Рисуем иконку трофеев
+        trophy_icon = self.icons["trophy"]
+        screen.blit(trophy_icon, (screen.get_width() - self.s(150), self.s(50)))
+        trophies_text = resource_font.render(f"{self.player_trophies}", True, (255, 200, 100))
+        screen.blit(trophies_text, (screen.get_width() - self.s(150) + trophy_icon.get_width() + 5, self.s(50)))
     
     def draw_tabs(self, screen):
         """Отрисовка вкладок магазина"""
@@ -722,9 +731,9 @@ class ShopScene(BaseScene):
         pygame.draw.rect(screen, self.colors["accent"], pack_rect, self.s(3), border_radius=self.s(12))
         
         # Иконка валюты
-        icon_font = self.get_font(40)
-        icon = icon_font.render(currency["icon"], True, (255, 215, 0))
-        screen.blit(icon, (pack_rect.centerx - icon.get_width()//2, pack_rect.top + self.s(20)))
+        currency_icon = self.icons["currency"]
+        screen.blit(currency_icon, (pack_rect.centerx - currency_icon.get_width()//2, 
+                                pack_rect.top + self.s(20)))
         
         # Название набора
         name_font = self.get_font(20, bold=True)
@@ -837,12 +846,10 @@ class ShopScene(BaseScene):
             pygame.draw.rect(card, (255, 215, 0), (0, 0, animated_size, animated_size), self.s(5))
             
             # Иконка валюты
-            icon_font = pygame.font.SysFont("arial", animated_size // 3)
-            icon = icon_font.render("💰", True, (255, 215, 0))
-            card.blit(icon, (animated_size//2 - icon.get_width()//2, 
-                           animated_size//2 - icon.get_height()//2))
-            
-            screen.blit(card, (card_x, card_y))
+            currency_icon = pygame.transform.scale(self.icons["currency"], 
+                                                (animated_size // 2, animated_size // 2))
+            card.blit(currency_icon, (animated_size//2 - currency_icon.get_width()//2, 
+                                    animated_size//2 - currency_icon.get_height()//2))
         
         # Текст "ПОЛУЧЕНО!"
         text_size = int(self.s(40) * (1 + progress * 0.3))

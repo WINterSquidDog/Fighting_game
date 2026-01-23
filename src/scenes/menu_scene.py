@@ -44,6 +44,13 @@ class MenuScene(BaseScene):
             "training": (180, 100, 255)  # Новый цвет для режима тренировки
         }
         
+        self.icons = {
+            "coin": self.load_icon("coin_icon", 24),
+            "trophy": self.load_icon("trophy_icon", 24),
+            "unlocked": self.load_icon("unlocked_icon", 20),
+            "locked": self.load_icon("locked_icon", 20)
+        }
+
         # Данные игрока из сохранения
         self.player_data = {
             "coins": self.save_manager.get_coins(),
@@ -950,11 +957,14 @@ class MenuScene(BaseScene):
         
         # Ресурсы игрока
         resource_font = self.get_font(18)
-        coins_text = resource_font.render(f"🪙 {self.player_data['coins']}", True, (255, 215, 0))
-        trophies_text = resource_font.render(f"🏆 {self.player_data['trophies']}", True, (255, 200, 100))
-        
-        screen.blit(coins_text, (screen.get_width() - self.s(150), self.s(25)))
-        screen.blit(trophies_text, (screen.get_width() - self.s(150), self.s(50)))
+        coins_icon = self.icons["coin"]
+        screen.blit(coins_icon, (screen.get_width() - self.s(150), self.s(25)))
+        coins_text = resource_font.render(f"{self.player_data['coins']}", True, (255, 215, 0))
+        screen.blit(coins_text, (screen.get_width() - self.s(150) + coins_icon.get_width() + 5, self.s(25)))
+        trophy_icon = self.icons["trophy"]
+        screen.blit(trophy_icon, (screen.get_width() - self.s(150), self.s(50)))
+        trophies_text = resource_font.render(f"{self.player_data['trophies']}", True, (255, 200, 100))
+        screen.blit(trophies_text, (screen.get_width() - self.s(150) + trophy_icon.get_width() + 5, self.s(50)))
     
     def _draw_section_tabs(self, screen):
         """Отрисовка вертикальных вкладок меню слева и справа, центрированных по Y - увеличенные"""
@@ -1601,7 +1611,13 @@ class MenuScene(BaseScene):
                 
                 # Статус разблокировки
                 status_font = self.get_font(18)
-                status_text = "🔓 РАЗБЛОКИРОВАН" if skin["unlocked"] else "🔒 ЗАБЛОКИРОВАН"
+                status_icon = self.icons["unlocked"] if skin["unlocked"] else self.icons["locked"]
+                status_text = "РАЗБЛОКИРОВАН" if skin["unlocked"] else "ЗАБЛОКИРОВАН"
+                icon_x = rect.centerx - status.get_width() // 2 - status_icon.get_width() - 5
+                icon_y = card_rect.bottom + self.s(40) + (status.get_height() - status_icon.get_height()) // 2
+                screen.blit(status_icon, (icon_x, icon_y))
+                status = status_font.render(status_text, True, status_color)
+                screen.blit(status, (rect.centerx - status.get_width() // 2, card_rect.bottom + self.s(40)))
                 status_color = self.colors["selected"] if skin["unlocked"] else self.colors["danger"]
                 status = status_font.render(status_text, True, status_color)
                 screen.blit(status, (rect.centerx - status.get_width() // 2, card_rect.bottom + self.s(40)))
