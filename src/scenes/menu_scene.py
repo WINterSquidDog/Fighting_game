@@ -162,7 +162,8 @@ class MenuScene(BaseScene):
         # 🎮 ДОБАВЛЕНО: Режимы игры
         self.game_modes = [
             {"id": "vs_bot", "name": "VS BOT"},
-            {"id": "training", "name": "ТРЕНИРОВКА"}
+            {"id": "training", "name": "ТРЕНИРОВКА"},
+            {"id": "vs_friend", "name": "ПРОТИВ ДРУГА"}
         ]  # Режимы игры как массив словарей
         self.selected_game_mode = 0  # 0 - VS BOT, 1 - Тренировка
         self.mode_selecting = False  # Режим выбора режима игры
@@ -540,6 +541,7 @@ class MenuScene(BaseScene):
         # 🎮 Обновляем названия режимов игры
         self.game_modes = [
             {"id": "vs_bot", "name": self.gm.settings.get_text("vs_bot", "VS BOT")},
+            {"id": "vs_friend", "name": self.gm.settings.get_text("vs_friend", "ПРОТИВ ДРУГА")},  # Новый режим
             {"id": "training", "name": self.gm.settings.get_text("training", "ТРЕНИРОВКА")}
         ]
     
@@ -883,13 +885,20 @@ class MenuScene(BaseScene):
         
         print(f"🎮 Запуск боя: {char_name} + {cameo_name} | Режим: {game_mode['name']}")
         
-        # 🎮 Передаем выбранный режим в игровые сцены
-        self._create_game_scenes(char_name, cameo_name, game_mode)
-        
-        from src.scenes.loading_scene import LoadingScene
-        loading_scene = LoadingScene(self.gm, "intro")
-        self.gm.register_scene("game_loading", loading_scene)
-        self.gm.set_scene("game_loading")
+        # 🎮 Для тренировки используем текущую логику (прямой переход)
+        if game_mode["id"] == "training":
+            self._create_game_scenes(char_name, cameo_name, game_mode)
+            
+            from src.scenes.loading_scene import LoadingScene
+            loading_scene = LoadingScene(self.gm, "intro")
+            self.gm.register_scene("game_loading", loading_scene)
+            self.gm.set_scene("game_loading")
+        else:
+            # Для VS BOT и Против друга переходим на сцену выбора персонажей
+            from src.scenes.character_selection_scene import CharacterSelectionScene
+            character_selection = CharacterSelectionScene(self.gm, game_mode["id"], is_training=False)
+            self.gm.register_scene("character_selection", character_selection)
+            self.gm.set_scene("character_selection")
     
     def _open_settings(self):
         self.gm.set_scene("settings")
@@ -909,16 +918,28 @@ class MenuScene(BaseScene):
         from src.scenes.victory_scene import VictoryScene
         
         player_char = Character(char_name, self.gm.resources)
-        enemy_char = Character("fighter_right", self.gm.resources)
+        enemy_char = Character("fighter_right", self.gm.resources)  # Бот по умолчанию
         player_cameo = Character(cameo_name, self.gm.resources)
         enemy_cameo = Character("cameo_right", self.gm.resources)
         
+        # Создаем данные режима игры
+        game_mode_data = {
+            "id": game_mode["id"],
+            "name": game_mode["name"],
+            "map": "random",  # Для тренировки всегда случайная карта
+            "is_training": game_mode["id"] == "training"
+        }
+        
         # 🎮 Создаем интро сцену с передачей режима игры
         self.gm.register_scene("intro", IntroSequenceScene(
-            self.gm, player_char, player_cameo, enemy_char, enemy_cameo, game_mode
+            self.gm, player_char, player_cameo, enemy_char, enemy_cameo, game_mode_data
         ))
-        self.gm.register_scene("battle", BattleScene(self.gm, player_char, enemy_char, game_mode))
-        self.gm.register_scene("victory", VictoryScene(self.gm, None, game_mode))
+        self.gm.register_scene("battle", BattleScene(
+            self.gm, player_char, enemy_char, game_mode_data
+        ))
+        self.gm.register_scene("victory", VictoryScene(
+            self.gm, None, game_mode_data
+        ))
     
     def update(self, dt):
         """Обновление сцены"""

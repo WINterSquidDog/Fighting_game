@@ -12,10 +12,12 @@ def resource_path(relative_path):
         base_path = os.path.abspath(".")
     
     return os.path.join(base_path, relative_path)
+
 class LoadingScene(BaseScene):
-    def __init__(self, gm, target_scene="menu"):
+    def __init__(self, gm, target_scene="menu", skip_logo=False):
         super().__init__(gm)
         self.target_scene = target_scene
+        self.skip_logo = skip_logo
         self.progress = 0
         self.loading_steps = [
             self.gm.settings.get_text("loading_resources"),
@@ -31,14 +33,24 @@ class LoadingScene(BaseScene):
         self.logo_duration = 2.0  # 2 секунды показываем логотип
         self.logo_image = None
         
+        # Проверяем первый запуск
+        if hasattr(gm, 'save_manager') and gm.save_manager:
+            self.skip_logo = not gm.save_manager.is_first_launch()
+        
     def on_enter(self):
         self.progress = 0
         self.current_step = 0
         self.step_progress = 0
         self.logo_displayed = False
         self.logo_timer = 0
-        self._load_logo()
-        self._load_background_art()
+        
+        # Если пропускаем логотип, сразу начинаем загрузку
+        if self.skip_logo:
+            self.logo_displayed = True
+            print("⏩ Пропуск логотипа (не первый запуск)")
+        else:
+            self._load_logo()
+            self._load_background_art()
         
     def _load_logo(self):
         """Загружаем логотип"""
@@ -87,6 +99,9 @@ class LoadingScene(BaseScene):
             self.logo_timer += dt
             if self.logo_timer >= self.logo_duration:
                 self.logo_displayed = True
+                # Если это был первый запуск, сохраняем флаг
+                if hasattr(self.gm, 'save_manager') and self.gm.save_manager:
+                    self.gm.save_manager.set_first_launch_false()
             return
             
         # Затем начинаем загрузку

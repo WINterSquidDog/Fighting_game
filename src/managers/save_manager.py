@@ -27,7 +27,10 @@ class SaveManager:
             "coins": 1000,
             "trophies": 0,
             "character_skins": {},
-            "cameo_skins": {}
+            "cameo_skins": {},
+            "first_launch": True,  # Флаг первого запуска
+            "map": "random",  # Выбранная карта
+            "character_map": {}  # Карты по умолчанию для персонажей
         }
         self.load_save()
     
@@ -81,6 +84,10 @@ class SaveManager:
             self.save_data["coins"] = kwargs["coins"]
         if "trophies" in kwargs:
             self.save_data["trophies"] = kwargs["trophies"]
+        if "first_launch" in kwargs:
+            self.save_data["first_launch"] = kwargs["first_launch"]
+        if "map" in kwargs:
+            self.save_data["map"] = kwargs["map"]
         
         # Сохраняем в файл
         self.write_save()
@@ -107,6 +114,24 @@ class SaveManager:
     def get_last_game_mode(self):
         """Возвращает последний выбранный режим игры"""
         return self.save_data.get("game_mode", "vs_bot")  # Возвращаем id (строчные)
+    
+    def is_first_launch(self):
+        """Проверяет, первый ли это запуск игры"""
+        return self.save_data.get("first_launch", True)
+    
+    def set_first_launch_false(self):
+        """Устанавливает флаг первого запуска в False"""
+        self.save_data["first_launch"] = False
+        self.write_save()
+    
+    def get_map(self):
+        """Возвращает выбранную карту"""
+        return self.save_data.get("map", "random")
+    
+    def set_map(self, map_name):
+        """Устанавливает карту"""
+        self.save_data["map"] = map_name
+        self.write_save()
     
     def add_coins(self, amount):
         coins = self.get_coins()

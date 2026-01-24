@@ -6,6 +6,8 @@ from src.scenes.loading_scene import LoadingScene
 from src.scenes.menu_scene import MenuScene
 from src.scenes.settings_scene import SettingsScene
 from src.scenes.battle_scene import BattleScene
+from src.scenes.victory_scene import VictoryScene
+from src.scenes.character_selection_scene import CharacterSelectionScene
 from src.scenes.intro_scene import IntroSequenceScene
 from src.scenes.victory_scene import VictoryScene
 from src.core.character import Character
@@ -63,8 +65,9 @@ def main():
     gm.register_scene("settings", SettingsScene(gm))
     gm.register_scene("intro", None)
     gm.register_scene("battle", None)
-    gm.register_scene("victory", None)
+    gm.register_scene("victory", VictoryScene(gm, None, {}))
     gm.register_scene("shop", ShopScene(gm))
+    gm.register_scene("character_selection", None)
 
     # Выставление первой сцены
     gm.set_scene("loading")

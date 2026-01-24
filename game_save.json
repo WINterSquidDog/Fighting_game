@@ -12,5 +12,13 @@
       ]
     },
     "cameo": {}
-  }
+  },
+  "character": "1x1x1x1",
+  "cameo": "c00lk1d",
+  "game_mode": "vs_bot",
+  "character_skins": {},
+  "cameo_skins": {},
+  "first_launch": false,
+  "map": "deep_caves",
+  "character_map": {}
 }
