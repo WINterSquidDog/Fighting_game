@@ -44,13 +44,6 @@ class MenuScene(BaseScene):
             "training": (180, 100, 255)  # Новый цвет для режима тренировки
         }
         
-        self.icons = {
-            "coin": self.load_icon("coin_icon", 24),
-            "trophy": self.load_icon("trophy_icon", 24),
-            "unlocked": self.load_icon("unlocked_icon", 20),
-            "locked": self.load_icon("locked_icon", 20)
-        }
-
         # Данные игрока из сохранения
         self.player_data = {
             "coins": self.save_manager.get_coins(),
@@ -190,6 +183,68 @@ class MenuScene(BaseScene):
         # 🎬 ДОБАВЛЕНО: Кэш для анимаций артов
         self.art_animations = {}  # Ключ: (имя, скин, размер) -> VideoAnimation
         self.playing_animations = []  # Список активных анимаций для обновления
+        
+        # Загружаем иконки
+        self.icons = {
+            "coin": self.load_icon("coin_icon", 24),
+            "trophy": self.load_icon("trophy_icon", 24),
+            "unlocked": self.load_icon("unlocked_icon", 20),
+            "locked": self.load_icon("locked_icon", 20),
+            "arrow_left": self.load_icon("arrow_left", 30),
+            "arrow_right": self.load_icon("arrow_right", 30)
+        }
+        
+    def load_icon(self, icon_name, size=24):
+        """Загружает иконку из Sprites/Icons с созданием заглушки при отсутствии"""
+        try:
+            icon_path = resource_path(os.path.join("Sprites", "Icons", f"{icon_name}.png"))
+            if os.path.exists(icon_path):
+                icon = pygame.image.load(icon_path).convert_alpha()
+                icon = pygame.transform.scale(icon, (size, size))
+                return icon
+            else:
+                return self._create_icon_placeholder(icon_name, size)
+        except Exception as e:
+            print(f"❌ Ошибка загрузки иконки {icon_name}: {e}")
+            return self._create_icon_placeholder(icon_name, size)
+    
+    def _create_icon_placeholder(self, icon_name, size):
+        """Создает заглушку для иконки"""
+        icon = pygame.Surface((size, size), pygame.SRCALPHA)
+        
+        # Разные цвета для разных типов иконок
+        if "coin" in icon_name.lower():
+            icon.fill((255, 215, 0, 255))  # Золотой
+            text = "C"
+        elif "trophy" in icon_name.lower():
+            icon.fill((255, 200, 100, 255))  # Оранжево-золотой
+            text = "T"
+        elif "unlock" in icon_name.lower():
+            icon.fill((100, 255, 100, 255))  # Зеленый
+            text = "U"
+        elif "lock" in icon_name.lower():
+            icon.fill((255, 100, 100, 255))  # Красный
+            text = "L"
+        elif "arrow_left" in icon_name.lower():
+            icon.fill((255, 100, 100, 255))  # Красный для стрелки (как button_primary)
+            text = "←"
+        elif "arrow_right" in icon_name.lower():
+            icon.fill((255, 100, 100, 255))  # Красный для стрелки (как button_primary)
+            text = "→"
+        else:
+            icon.fill((200, 200, 200, 255))  # Серый
+            text = "I"
+        
+        # Добавляем текст
+        font = pygame.font.SysFont("arial", max(10, size // 2))
+        text_surface = font.render(text, True, (255, 255, 255))
+        text_rect = text_surface.get_rect(center=(size//2, size//2))
+        icon.blit(text_surface, text_rect)
+        
+        # Рамка
+        pygame.draw.rect(icon, (255, 255, 255), (0, 0, size, size), 1)
+        
+        return icon
         
     def on_enter(self):
         """Загружаем карточки и восстанавливаем последний выбор"""
@@ -955,12 +1010,16 @@ class MenuScene(BaseScene):
         title = title_font.render(title_text, True, self.colors["accent"])
         screen.blit(title, (screen.get_width()//2 - title.get_width()//2, self.s(20)))
         
-        # Ресурсы игрока
+        # Ресурсы игрока с иконками
         resource_font = self.get_font(18)
+        
+        # Монеты с иконкой
         coins_icon = self.icons["coin"]
         screen.blit(coins_icon, (screen.get_width() - self.s(150), self.s(25)))
         coins_text = resource_font.render(f"{self.player_data['coins']}", True, (255, 215, 0))
         screen.blit(coins_text, (screen.get_width() - self.s(150) + coins_icon.get_width() + 5, self.s(25)))
+        
+        # Трофеи с иконкой
         trophy_icon = self.icons["trophy"]
         screen.blit(trophy_icon, (screen.get_width() - self.s(150), self.s(50)))
         trophies_text = resource_font.render(f"{self.player_data['trophies']}", True, (255, 200, 100))
@@ -1402,16 +1461,23 @@ class MenuScene(BaseScene):
             
             pygame.draw.rect(screen, self.colors["button_primary"], self.char_left_btn, border_radius=self.s(10))
             pygame.draw.rect(screen, self.colors["text_light"], self.char_left_btn, self.s(2), border_radius=self.s(10))
-            arrow_font = self.get_font(28, bold=True)
-            left_arrow = arrow_font.render("⟨", True, self.colors["text_light"])
-            screen.blit(left_arrow, (self.char_left_btn.centerx - left_arrow.get_width() // 2,
-                                self.char_left_btn.centery - left_arrow.get_height() // 2))
+            
+            # Используем иконку стрелки вместо эмодзи
+            left_arrow_icon = self.icons["arrow_left"]
+            screen.blit(left_arrow_icon, (
+                self.char_left_btn.centerx - left_arrow_icon.get_width() // 2,
+                self.char_left_btn.centery - left_arrow_icon.get_height() // 2
+            ))
             
             pygame.draw.rect(screen, self.colors["button_primary"], self.char_right_btn, border_radius=self.s(10))
-            pygame.draw.rect(screen, self.colors["text_light"], self.char_right_btn, self.s(2), border_radius=self.s(10))
-            right_arrow = arrow_font.render("⟩", True, self.colors["text_light"])
-            screen.blit(right_arrow, (self.char_right_btn.centerx - right_arrow.get_width() // 2,
-                                    self.char_right_btn.centery - right_arrow.get_height() // 2))
+            pygame.draw.rect(screen, self.colors["button_primary"], self.char_right_btn, self.s(2), border_radius=self.s(10))
+            
+            # Используем иконку стрелки вместо эмодзи
+            right_arrow_icon = self.icons["arrow_right"]
+            screen.blit(right_arrow_icon, (
+                self.char_right_btn.centerx - right_arrow_icon.get_width() // 2,
+                self.char_right_btn.centery - right_arrow_icon.get_height() // 2
+            ))
         
         btn_width = min(self.s(180), rect.width * 0.4)
         btn_height = self.s(45)
@@ -1492,16 +1558,23 @@ class MenuScene(BaseScene):
             
             pygame.draw.rect(screen, self.colors["button_secondary"], self.cameo_left_btn, border_radius=self.s(10))
             pygame.draw.rect(screen, self.colors["text_light"], self.cameo_left_btn, self.s(2), border_radius=self.s(10))
-            arrow_font = self.get_font(28, bold=True)
-            left_arrow = arrow_font.render("⟨", True, self.colors["text_light"])
-            screen.blit(left_arrow, (self.cameo_left_btn.centerx - left_arrow.get_width() // 2,
-                                self.cameo_left_btn.centery - left_arrow.get_height() // 2))
+            
+            # Используем иконку стрелки вместо эмодзи
+            left_arrow_icon = self.icons["arrow_left"]
+            screen.blit(left_arrow_icon, (
+                self.cameo_left_btn.centerx - left_arrow_icon.get_width() // 2,
+                self.cameo_left_btn.centery - left_arrow_icon.get_height() // 2
+            ))
             
             pygame.draw.rect(screen, self.colors["button_secondary"], self.cameo_right_btn, border_radius=self.s(10))
             pygame.draw.rect(screen, self.colors["text_light"], self.cameo_right_btn, self.s(2), border_radius=self.s(10))
-            right_arrow = arrow_font.render("⟩", True, self.colors["text_light"])
-            screen.blit(right_arrow, (self.cameo_right_btn.centerx - right_arrow.get_width() // 2,
-                                    self.cameo_right_btn.centery - right_arrow.get_height() // 2))
+            
+            # Используем иконку стрелки вместо эмодзи
+            right_arrow_icon = self.icons["arrow_right"]
+            screen.blit(right_arrow_icon, (
+                self.cameo_right_btn.centerx - right_arrow_icon.get_width() // 2,
+                self.cameo_right_btn.centery - right_arrow_icon.get_height() // 2
+            ))
         
         btn_width = min(self.s(180), rect.width * 0.4)
         btn_height = self.s(45)
@@ -1611,15 +1684,26 @@ class MenuScene(BaseScene):
                 
                 # Статус разблокировки
                 status_font = self.get_font(18)
-                status_icon = self.icons["unlocked"] if skin["unlocked"] else self.icons["locked"]
-                status_text = "РАЗБЛОКИРОВАН" if skin["unlocked"] else "ЗАБЛОКИРОВАН"
+                
+                # Сначала определяем все переменные
+                if skin["unlocked"]:
+                    status_text = "РАЗБЛОКИРОВАН"
+                    status_color = self.colors["selected"]
+                    status_icon = self.icons["unlocked"]
+                else:
+                    status_text = "ЗАБЛОКИРОВАН"
+                    status_color = self.colors["danger"]
+                    status_icon = self.icons["locked"]
+                
+                # Теперь создаем поверхность текста
+                status = status_font.render(status_text, True, status_color)
+                
+                # Рисуем иконку
                 icon_x = rect.centerx - status.get_width() // 2 - status_icon.get_width() - 5
                 icon_y = card_rect.bottom + self.s(40) + (status.get_height() - status_icon.get_height()) // 2
                 screen.blit(status_icon, (icon_x, icon_y))
-                status = status_font.render(status_text, True, status_color)
-                screen.blit(status, (rect.centerx - status.get_width() // 2, card_rect.bottom + self.s(40)))
-                status_color = self.colors["selected"] if skin["unlocked"] else self.colors["danger"]
-                status = status_font.render(status_text, True, status_color)
+                
+                # Рисуем текст
                 screen.blit(status, (rect.centerx - status.get_width() // 2, card_rect.bottom + self.s(40)))
             else:
                 # Если карточки нет, показываем заглушку
@@ -1645,16 +1729,23 @@ class MenuScene(BaseScene):
                 
                 pygame.draw.rect(screen, self.colors["button_primary"], self.skin_left_btn, border_radius=self.s(10))
                 pygame.draw.rect(screen, self.colors["text_light"], self.skin_left_btn, self.s(2), border_radius=self.s(10))
-                arrow_font = self.get_font(28, bold=True)
-                left_arrow = arrow_font.render("⟨", True, self.colors["text_light"])
-                screen.blit(left_arrow, (self.skin_left_btn.centerx - left_arrow.get_width() // 2,
-                                    self.skin_left_btn.centery - left_arrow.get_height() // 2))
+                
+                # Используем иконку стрелки вместо эмодзи
+                left_arrow_icon = self.icons["arrow_left"]
+                screen.blit(left_arrow_icon, (
+                    self.skin_left_btn.centerx - left_arrow_icon.get_width() // 2,
+                    self.skin_left_btn.centery - left_arrow_icon.get_height() // 2
+                ))
                 
                 pygame.draw.rect(screen, self.colors["button_primary"], self.skin_right_btn, border_radius=self.s(10))
                 pygame.draw.rect(screen, self.colors["text_light"], self.skin_right_btn, self.s(2), border_radius=self.s(10))
-                right_arrow = arrow_font.render("⟩", True, self.colors["text_light"])
-                screen.blit(right_arrow, (self.skin_right_btn.centerx - right_arrow.get_width() // 2,
-                                        self.skin_right_btn.centery - right_arrow.get_height() // 2))
+                
+                # Используем иконку стрелки вместо эмодзи
+                right_arrow_icon = self.icons["arrow_right"]
+                screen.blit(right_arrow_icon, (
+                    self.skin_right_btn.centerx - right_arrow_icon.get_width() // 2,
+                    self.skin_right_btn.centery - right_arrow_icon.get_height() // 2
+                ))
         
         # Кнопка выбора
         btn_width = min(self.s(180), rect.width * 0.4)

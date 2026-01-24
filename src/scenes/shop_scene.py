@@ -17,11 +17,7 @@ def resource_path(relative_path):
 class ShopScene(BaseScene):
     def __init__(self, gm):
         super().__init__(gm)
-        self.icons = {
-            "coin": self.load_icon("coin_icon", 24),
-            "trophy": self.load_icon("trophy_icon", 24),
-            "currency": self.load_icon("currency_icon", 40)  # Для вкладки валюты
-        }
+        
         # Цветовая схема
         self.colors = {
             "background": (20, 20, 40),
@@ -91,6 +87,64 @@ class ShopScene(BaseScene):
         # Сообщение о блокировке скина (фикс бага с зависанием)
         self.locked_skin_message = False
         self.locked_skin_message_time = 0
+        
+        # Загружаем иконки
+        self.icons = {
+            "coin": self.load_icon("coin_icon", 24),
+            "trophy": self.load_icon("trophy_icon", 24),
+            "currency": self.load_icon("currency_icon", 40),
+            "arrow_left": self.load_icon("arrow_left", 30),
+            "arrow_right": self.load_icon("arrow_right", 30)
+        }
+        
+    def load_icon(self, icon_name, size=24):
+        """Загружает иконку из Sprites/Icons с созданием заглушки при отсутствии"""
+        try:
+            icon_path = resource_path(os.path.join("Sprites", "Icons", f"{icon_name}.png"))
+            if os.path.exists(icon_path):
+                icon = pygame.image.load(icon_path).convert_alpha()
+                icon = pygame.transform.scale(icon, (size, size))
+                return icon
+            else:
+                return self._create_icon_placeholder(icon_name, size)
+        except Exception as e:
+            print(f"❌ Ошибка загрузки иконки {icon_name}: {e}")
+            return self._create_icon_placeholder(icon_name, size)
+    
+    def _create_icon_placeholder(self, icon_name, size):
+        """Создает заглушку для иконки"""
+        icon = pygame.Surface((size, size), pygame.SRCALPHA)
+        
+        # Разные цвета для разных типов иконок
+        if "coin" in icon_name.lower():
+            icon.fill((255, 215, 0, 255))  # Золотой
+            text = "C"
+        elif "trophy" in icon_name.lower():
+            icon.fill((255, 200, 100, 255))  # Оранжево-золотой
+            text = "T"
+        elif "currency" in icon_name.lower():
+            icon.fill((100, 150, 255, 255))  # Синий
+            text = "$"
+        elif "arrow_left" in icon_name.lower():
+            icon.fill((100, 150, 255, 255))  # Синий для стрелки
+            text = "←"
+        elif "arrow_right" in icon_name.lower():
+            icon.fill((100, 150, 255, 255))  # Синий для стрелки
+            text = "→"
+        else:
+            icon.fill((200, 200, 200, 255))  # Серый
+            text = "I"
+        
+        # Добавляем текст
+        font = pygame.font.SysFont("arial", max(10, size // 2))
+        text_surface = font.render(text, True, (255, 255, 255))
+        text_rect = text_surface.get_rect(center=(size//2, size//2))
+        icon.blit(text_surface, text_rect)
+        
+        # Рамка
+        pygame.draw.rect(icon, (255, 255, 255), (0, 0, size, size), 1)
+        
+        return icon
         
     def load_skins_for_sale(self):
         """Загружает все скины, доступные для покупки с учетом сохранений"""
@@ -512,14 +566,16 @@ class ShopScene(BaseScene):
         title = title_font.render(title_text, True, self.colors["accent"])
         screen.blit(title, (screen.get_width()//2 - title.get_width()//2, self.s(20)))
         
-        # Ресурсы игрока
+        # Ресурсы игрока с иконками
         resource_font = self.get_font(18)
+        
+        # Монеты с иконкой
         coins_icon = self.icons["coin"]
         screen.blit(coins_icon, (screen.get_width() - self.s(150), self.s(25)))
         coins_text = resource_font.render(f"{self.player_coins}", True, (255, 215, 0))
         screen.blit(coins_text, (screen.get_width() - self.s(150) + coins_icon.get_width() + 5, self.s(25)))
-
-        # Рисуем иконку трофеев
+        
+        # Трофеи с иконкой
         trophy_icon = self.icons["trophy"]
         screen.blit(trophy_icon, (screen.get_width() - self.s(150), self.s(50)))
         trophies_text = resource_font.render(f"{self.player_trophies}", True, (255, 200, 100))
@@ -688,10 +744,12 @@ class ShopScene(BaseScene):
             pygame.draw.rect(screen, self.colors["button_primary"], self.skin_left_btn_rect, border_radius=self.s(10))
             pygame.draw.rect(screen, self.colors["text_light"], self.skin_left_btn_rect, self.s(2), border_radius=self.s(10))
             
-            arrow_font = self.get_font(28, bold=True)
-            left_arrow = arrow_font.render("⟨", True, self.colors["text_light"])
-            screen.blit(left_arrow, (self.skin_left_btn_rect.centerx - left_arrow.get_width()//2,
-                                   self.skin_left_btn_rect.centery - left_arrow.get_height()//2))
+            # Используем иконку стрелки вместо эмодзи
+            left_arrow_icon = self.icons["arrow_left"]
+            screen.blit(left_arrow_icon, (
+                self.skin_left_btn_rect.centerx - left_arrow_icon.get_width()//2,
+                self.skin_left_btn_rect.centery - left_arrow_icon.get_height()//2
+            ))
             
             # Стрелка вправо - ФИКС: сохраняем прямоугольник для обработки кликов
             self.skin_right_btn_rect = pygame.Rect(
@@ -704,9 +762,12 @@ class ShopScene(BaseScene):
             pygame.draw.rect(screen, self.colors["button_primary"], self.skin_right_btn_rect, border_radius=self.s(10))
             pygame.draw.rect(screen, self.colors["text_light"], self.skin_right_btn_rect, self.s(2), border_radius=self.s(10))
             
-            right_arrow = arrow_font.render("⟩", True, self.colors["text_light"])
-            screen.blit(right_arrow, (self.skin_right_btn_rect.centerx - right_arrow.get_width()//2,
-                                    self.skin_right_btn_rect.centery - right_arrow.get_height()//2))
+            # Используем иконку стрелки вместо эмодзи
+            right_arrow_icon = self.icons["arrow_right"]
+            screen.blit(right_arrow_icon, (
+                self.skin_right_btn_rect.centerx - right_arrow_icon.get_width()//2,
+                self.skin_right_btn_rect.centery - right_arrow_icon.get_height()//2
+            ))
         else:
             # Если скин один, очищаем ссылки на кнопки
             self.skin_left_btn_rect = None
@@ -730,10 +791,9 @@ class ShopScene(BaseScene):
         pygame.draw.rect(screen, self.colors["header_bg"], pack_rect, border_radius=self.s(12))
         pygame.draw.rect(screen, self.colors["accent"], pack_rect, self.s(3), border_radius=self.s(12))
         
-        # Иконка валюты
+        # Иконка валюты (используем иконку вместо эмодзи)
         currency_icon = self.icons["currency"]
-        screen.blit(currency_icon, (pack_rect.centerx - currency_icon.get_width()//2, 
-                                pack_rect.top + self.s(20)))
+        screen.blit(currency_icon, (pack_rect.centerx - currency_icon.get_width()//2, pack_rect.top + self.s(20)))
         
         # Название набора
         name_font = self.get_font(20, bold=True)
@@ -845,11 +905,13 @@ class ShopScene(BaseScene):
             card.fill((100, 100, 255, 200))
             pygame.draw.rect(card, (255, 215, 0), (0, 0, animated_size, animated_size), self.s(5))
             
-            # Иконка валюты
+            # Используем иконку валюты вместо эмодзи
             currency_icon = pygame.transform.scale(self.icons["currency"], 
-                                                (animated_size // 2, animated_size // 2))
+                                                  (animated_size // 2, animated_size // 2))
             card.blit(currency_icon, (animated_size//2 - currency_icon.get_width()//2, 
                                     animated_size//2 - currency_icon.get_height()//2))
+            
+            screen.blit(card, (card_x, card_y))
         
         # Текст "ПОЛУЧЕНО!"
         text_size = int(self.s(40) * (1 + progress * 0.3))

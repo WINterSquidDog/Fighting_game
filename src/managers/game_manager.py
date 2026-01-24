@@ -4,9 +4,20 @@ GameManager - унифицированная система управления
 Только базовый класс сцены и менеджер, без конкретных сцен.
 """
 
-from main import resource_path
 import pygame
 import os
+import sys
+
+def resource_path(relative_path):
+    """Получает правильный путь к ресурсам для .exe и .py"""
+    try:
+        # PyInstaller создает временную папку и хранит путь в _MEIPASS
+        base_path = sys._MEIPASS
+    except Exception:
+        base_path = os.path.abspath(".")
+    
+    return os.path.join(base_path, relative_path)
+
 # src/managers/game_manager.py
 class BaseScene:
     def __init__(self, game_manager):
