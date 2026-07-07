@@ -7,17 +7,10 @@ GameManager - унифицированная система управления
 import pygame
 import os
 import sys
-
-def resource_path(relative_path):
-    """Получает правильный путь к ресурсам для .exe и .py"""
-    try:
-        # PyInstaller создает временную папку и хранит путь в _MEIPASS
-        base_path = sys._MEIPASS
-    except Exception:
-        base_path = os.path.abspath(".")
-    
-    return os.path.join(base_path, relative_path)
-
+from src.core.resource import resource_path
+from src.managers.resource_manager import ResourceManager
+from src.core.input_handler import InputHandler
+from src.managers.settings_manager import SettingsManager
 # src/managers/game_manager.py
 class BaseScene:
     def __init__(self, game_manager):
@@ -118,19 +111,19 @@ class BaseScene:
 
 class GameManager:
     def __init__(self, resources, input_handler, ui_module=None):
-        self.resources = resources
-        self.input = input_handler
-        self.ui = ui_module
-        self.scenes = {}
-        self.active_scene = None
-        self.delta = 0.0
-        self.settings = None
+        self.resources: ResourceManager = resources
+        self.input: InputHandler = input_handler
+        self.ui: None | None = ui_module
+        self.scenes: dict = {}
+        self.active_scene: BaseScene = None
+        self.delta: float = 0.0
+        self.settings: None | SettingsManager = None
         self.music_playing = False
 
     def register_scene(self, name, scene):
         self.scenes[name] = scene
 
-    def play_background_music(self):
+    def play_background_menu_music(self):
         """Запускает фоновую музыку если она еще не играет"""
         if self.music_playing:
             return

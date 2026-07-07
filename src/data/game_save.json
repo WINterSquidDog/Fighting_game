@@ -1,0 +1,14 @@
+{
+  "character": "1x1x1x1",
+  "cameo": "c00lk1d",
+  "character_skin": "default",
+  "cameo_skin": "default",
+  "game_mode": "vs_bot",
+  "coins": 1000,
+  "trophies": 0,
+  "character_skins": {},
+  "cameo_skins": {},
+  "first_launch": false,
+  "map": "random",
+  "character_map": {}
+}

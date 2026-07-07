@@ -64,7 +64,7 @@ class GameManager:
     def register_scene(self, name, scene):
         self.scenes[name] = scene
 
-    def play_background_music(self):
+    def play_background_menu_music(self):
         """Запускает фоновую музыку если она еще не играет"""
         if self.music_playing:
             return

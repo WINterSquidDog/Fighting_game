@@ -1,5 +1,6 @@
 # main.py
-import pygame
+# Импорты
+import pygame 
 from src.managers.game_manager import GameManager
 from src.managers.settings_manager import SettingsManager
 from src.scenes.loading_scene import LoadingScene
@@ -18,19 +19,9 @@ from src.managers.save_manager import SaveManager
 from src.scenes.shop_scene import ShopScene
 from src.managers.skin_manager import SkinManager
 from src.scenes.shop_scene import ShopScene
+from src.core.resource import resource_path
 import sys
 import os
-
-# Определяем, запущено ли приложение из .exe
-def resource_path(relative_path):
-    """ Получает правильный путь к ресурсам для .exe """
-    try:
-        # PyInstaller создает временную папку и хранит путь в _MEIPASS
-        base_path = sys._MEIPASS
-    except Exception:
-        base_path = os.path.abspath(".")
-    
-    return os.path.join(base_path, relative_path)
 
 def main():
     # Инициализация проект

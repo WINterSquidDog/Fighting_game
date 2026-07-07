@@ -16,14 +16,15 @@ def resource_path(relative_path):
 
 class SettingsManager:
     def __init__(self):
-        self.settings_file = "game_settings.json"
+        self.settings_file = "src\data\game_settings.json"
         self.base_resolution = (1280, 720)
         self.default_settings = {
             "music_volume": 0.5,
             "sound_volume": 0.7,
             "fullscreen": False,
             "resolution": [1280, 720],
-            "language": "Русский"
+            "language": "Русский",
+            "fps": 60
         }
         self.current_settings = self.default_settings.copy()
         self.scale_factor = 1.0

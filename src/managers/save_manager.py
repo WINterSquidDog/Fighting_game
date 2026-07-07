@@ -16,7 +16,7 @@ def resource_path(relative_path):
 
 class SaveManager:
     def __init__(self):
-        self.save_file = resource_path("game_save.json")  # Используем resource_path
+        self.save_file = resource_path("src\data\game_save.json")  # Используем resource_path
         self.save_data = {}
         self.default_data = {
             "character": "1x1x1x1",

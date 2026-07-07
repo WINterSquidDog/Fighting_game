@@ -184,7 +184,7 @@ class MenuScene(BaseScene):
     def on_enter(self):
         """Загружаем карточки и восстанавливаем последний выбор"""
         self._load_all_cards()
-        self._play_background_music()
+        self._play_background_menu_music()
         self._restore_last_selection()
         
         # ОБНОВЛЯЕМ ДАННЫЕ ИГРОКА ИЗ СОХРАНЕНИЙ
@@ -420,7 +420,7 @@ class MenuScene(BaseScene):
         
         return card
 
-    def _play_background_music(self):
+    def _play_background_menu_music(self):
         """Воспроизводит фоновую музыку меню если она еще не играет - ИСПРАВЛЕНО ДЛЯ PYINSTALLER"""
         if self.music_started:
             return
