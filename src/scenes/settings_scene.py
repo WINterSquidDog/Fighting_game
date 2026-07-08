@@ -16,7 +16,9 @@ class SettingsScene(BaseScene):
         ]
         
         self.languages = list(self.gm.settings.language_manager.available_languages.values())
-        
+        self.fps_vars = [60, 120, 144, 240, 360]
+        self.fps_buttons = []
+
         self.colors = {
             "background": (40, 40, 60),
             "header_bg": (30, 30, 50),
@@ -100,6 +102,10 @@ class SettingsScene(BaseScene):
             if lang_button.collidepoint(mouse_pos):
                 self.settings_manager.current_settings["language"] = self.languages[i]
         
+        for i, fps_button in enumerate(self.fps_buttons):
+            if fps_button.collidepoint(mouse_pos):
+                self.settings_manager.current_settings["fps"] = self.fps_vars[i]
+
         if self.apply_button and self.apply_button.collidepoint(mouse_pos):
             self._apply_settings()  # Теперь сразу применяем
     
@@ -197,7 +203,7 @@ class SettingsScene(BaseScene):
         
         sections = [
             (self.gm.settings.get_text("audio_settings"), self._draw_audio_settings, 120),
-            (self.gm.settings.get_text("graphics_settings"), self._draw_graphics_settings, 150),
+            (self.gm.settings.get_text("graphics_settings"), self._draw_graphics_settings, 200),
             (self.gm.settings.get_text("system_settings"), self._draw_system_settings, 120)
         ]
         
@@ -332,6 +338,35 @@ class SettingsScene(BaseScene):
             res_text = self._get_resolution_text(resolution, button_width - 10)
             screen.blit(res_text, (btn_rect.centerx - res_text.get_width() // 2,
                                 btn_rect.centery - res_text.get_height() // 2))
+            # ---- Выбор FPS ----
+            fps_y = resolution_start_y + 2 * (button_height + button_spacing) + 15  # отступ сверху
+            fps_font = self.get_font(20)
+            fps_label = fps_font.render("FPS", True, self.colors["text_light"])
+            screen.blit(fps_label, (rect.x + 30, fps_y))
+
+            fps_buttons_start_x = controls_start_x
+            fps_button_width = 60  # можно сделать чуть уже
+            fps_button_height = 28
+
+            self.fps_buttons = []
+            for i, fps_value in enumerate(self.fps_vars):
+                btn_rect = pygame.Rect(
+                    fps_buttons_start_x + i * (fps_button_width + button_spacing),
+                    fps_y,
+                    fps_button_width,
+                    fps_button_height
+                )
+                self.fps_buttons.append(btn_rect)
+                
+                is_selected = self.settings_manager.current_settings.get("fps", 60) == fps_value
+                color = self.colors["button_primary"] if is_selected else (80, 80, 100)
+                
+                pygame.draw.rect(screen, color, btn_rect, border_radius=4)
+                pygame.draw.rect(screen, self.colors["text_light"], btn_rect, 2, border_radius=4)
+                
+                fps_text = self.get_font(14).render(str(fps_value), True, self.colors["text_light"])
+                screen.blit(fps_text, (btn_rect.centerx - fps_text.get_width() // 2,
+                                    btn_rect.centery - fps_text.get_height() // 2))
 
     def _get_resolution_text(self, resolution, max_width):
         base_text = f"{resolution[0]}x{resolution[1]}"

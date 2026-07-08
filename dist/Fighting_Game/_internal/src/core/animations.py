@@ -188,7 +188,7 @@ class VideoAnimation(Animation):
     """Анимация на основе видео"""
     
     def __init__(self, video_path: str, target_size: Tuple[int, int] = None, 
-                 fps: int = None, loop: bool = True, max_frames: int = None):
+                 fps: int = None, loop: bool = True, max_frames: int = None,):
         """
         Инициализирует анимацию из видео
         
@@ -200,7 +200,7 @@ class VideoAnimation(Animation):
             max_frames: максимальное количество кадров для загрузки
         """
         # Загружаем кадры из видео
-        frames, video_fps = load_video_frames(video_path, target_size, max_frames)
+        frames, video_fps = load_video_frames(video_path, target_size, max_frames, fps)
         
         # Используем FPS из видео если не указан
         if fps is None:

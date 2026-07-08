@@ -9,22 +9,22 @@ import os
 class LoadingScene(BaseScene):
     def __init__(self, gm, target_scene="menu", skip_logo=False):
         super().__init__(gm)
-        self.target_scene = target_scene
-        self.skip_logo = skip_logo
-        self.progress = 0
+        self.target_scene = target_scene # Куда переходить
+        self.skip_logo = skip_logo # Надо ли пропускать логотип
+        self.progress = 0 # Процент загрузки
         self.loading_steps = [
             self.gm.settings.get_text("loading_resources"),
             self.gm.settings.get_text("loading_characters"), 
             self.gm.settings.get_text("loading_scenes"),
             self.gm.settings.get_text("loading_complete")
         ]
-        self.current_step = 0
+        self.current_step = 0 # Шаг загрузки
         self.step_progress = 0
-        self.background_art = None
-        self.logo_displayed = False
-        self.logo_timer = 0
+        self.background_art = None # Фоновый арт
+        self.logo_displayed = False # Надо ли показывать логотип
+        self.logo_timer = 0 # Сколько времени потрачено на логотип
         self.logo_duration = 2.0  # 2 секунды показываем логотип
-        self.logo_image = None
+        self.logo_image = None # Изображение логотипа
         self._debug_logo_skip = False  # Для отладки
         
         # Проверяем первый запуск
@@ -32,31 +32,16 @@ class LoadingScene(BaseScene):
         
     def _check_first_launch(self):
         """Проверяет, нужно ли показывать логотип"""
-        # Если явно указано пропустить логотип
-        if self.skip_logo:
+        if self.skip_logo: # Если явно надо пропустить
             print("⏩ Пропуск логотипа (явно указано в параметрах)")
-            self.logo_displayed = True
+            self.logo_displayed = False
             self._debug_logo_skip = "skip_logo=True"
             return
-            
-        # Проверяем через save_manager
-        if hasattr(self.gm, 'save_manager') and self.gm.save_manager:
-            is_first = self.gm.save_manager.is_first_launch()
-            print(f"🔍 Проверка первого запуска: is_first_launch() = {is_first}")
-            
-            if not is_first:
-                print("⏩ Пропуск логотипа (не первый запуск)")
-                self.logo_displayed = True
-                self._debug_logo_skip = "not first launch"
-            else:
-                print("🎬 Первый запуск! Будет показан логотип")
-                self.logo_displayed = False
-                self._debug_logo_skip = "first launch, show logo"
         else:
-            # Если save_manager нет, показываем логотип
-            print("⚠️ SaveManager не найден! Показываем логотип по умолчанию")
-            self.logo_displayed = False
-            self._debug_logo_skip = "no save_manager"
+            print("✅ Логотип показан")
+            self.logo_displayed = True
+            self._debug_logo_skip = "showed logo"
+            
         
     def on_enter(self):
         self.progress = 0
@@ -152,12 +137,12 @@ class LoadingScene(BaseScene):
         
     def update(self, dt):
         # Сначала показываем логотип
-        if not self.logo_displayed:
+        if self.logo_displayed:
             self.logo_timer += dt
-            print(f"⏳ Показ логотипа: {self.logo_timer:.1f}/{self.logo_duration} сек")  # Отладка
+            #print(f"⏳ Показ логотипа: {self.logo_timer:.1f}/{self.logo_duration} сек")  # Отладка
             
             if self.logo_timer >= self.logo_duration:
-                self.logo_displayed = True
+                self.logo_displayed = False
                 print("✅ Логотип показан, переходим к загрузке")
                 
                 # Если это был первый запуск, сохраняем флаг
@@ -181,7 +166,8 @@ class LoadingScene(BaseScene):
                 
     def draw(self, screen):
         # Фаза 1: Показ логотипа на черном фоне
-        if not self.logo_displayed:
+        if self.logo_displayed:
+            #self.skip_logo = True
             screen.fill((0, 0, 0))
             
             if self.logo_image:

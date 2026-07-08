@@ -64,8 +64,9 @@ def main():
     gm.set_scene("loading")
     # Игровой цикл
     running = True
+    print(gm.settings.current_settings["fps"])
     while running:
-        dt = clock.tick(60) / 1000.0
+        dt = clock.tick(gm.settings.current_settings["fps"]) / 1000.0
 
         events = pygame.event.get()
         for event in events:

@@ -18,7 +18,7 @@ def resource_path(relative_path):
 
 
 def load_video_frames(video_path: str, target_size: Tuple[int, int] = None, 
-                     max_frames: int = None) -> Tuple[List[pygame.Surface], int]:
+                     max_frames: int = None, fps: int = 60) -> Tuple[List[pygame.Surface], int]:
     """
     Загружает видео и конвертирует его в список кадров pygame.Surface
     Возвращает: (список кадров, FPS видео)
@@ -32,7 +32,6 @@ def load_video_frames(video_path: str, target_size: Tuple[int, int] = None,
         Tuple[List[pygame.Surface], int]: список кадров и FPS
     """
     frames = []
-    fps = 60  # значение по умолчанию
     
     # Проверяем существование файла с учетом resource_path
     actual_path = resource_path(video_path)
