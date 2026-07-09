@@ -41,7 +41,7 @@ class MenuScene(BaseScene):
             "accent": (255, 215, 0),
             "danger": (255, 80, 80),
             "selected": (100, 255, 100),
-            "training": (180, 100, 255)  # Новый цвет для режима тренировки
+            "training": (180, 100, 255)
         }
         
         # Данные игрока из сохранения
@@ -62,7 +62,7 @@ class MenuScene(BaseScene):
                 "skin": "default"
             },
             {
-                "name": "chara",  # строчными буквами для единообразия
+                "name": "chara",
                 "card_normal": None,
                 "card_special": None,
                 "description": "",
@@ -70,7 +70,7 @@ class MenuScene(BaseScene):
                 "skin": "default"
             },
             {
-                "name": "steve",  # строчными буквами для единообразия
+                "name": "steve",
                 "card_normal": None,
                 "card_special": None,
                 "description": "",
@@ -79,11 +79,11 @@ class MenuScene(BaseScene):
             }
         ]
         
-        # Камео с карточками (все строчными буквами)
+        # Камео с карточками
         self.selected_cameo = 0
         self.cameos = [
             {
-                "name": "c00lk1d",  # строчными буквами
+                "name": "c00lk1d",
                 "description": "",
                 "selected": False,
                 "skin": "default",
@@ -91,7 +91,7 @@ class MenuScene(BaseScene):
                 "card_special": None
             },
             {
-                "name": "papyrus",  # строчными буквами
+                "name": "papyrus",
                 "description": "",
                 "selected": False,
                 "skin": "default",
@@ -100,7 +100,7 @@ class MenuScene(BaseScene):
             },
         ]
 
-        # Данные скинов - ОБНОВЛЕННАЯ СТРУКТУРА с учетом сохранений И ЦЕН
+        # Данные скинов
         self.character_skins = {
             "1x1x1x1": {
                 "default": {"name": self.gm.settings.get_text("skin_default"), "unlocked": True, "price": 0, "card_normal": None, "card_special": None},
@@ -116,7 +116,7 @@ class MenuScene(BaseScene):
             }
         }
 
-        # ОБНОВЛЕННАЯ СТРУКТУРА ДЛЯ КАМЕО (все строчными буквами) с учетом сохранений И ЦЕН
+        # Структура для камео
         self.cameo_skins = {
             "c00lk1d": {
                 "default": {"name": self.gm.settings.get_text("skin_default"), "unlocked": True, "price": 0, "card_normal": None, "card_special": None},
@@ -159,8 +159,8 @@ class MenuScene(BaseScene):
         self.selection_confirmed_time = 0
         self.show_selection_confirmed = False
         
-        # 🎮 ДОБАВЛЕНО: Режимы игры
-        self.game_modes = ["VS BOT", "ТРЕНИРОВКА"]  # Режимы игры
+        # Режимы игры
+        self.game_modes = ["VS BOT", "ТРЕНИРОВКА"]  
         self.selected_game_mode = 0  # 0 - VS BOT, 1 - Тренировка
         self.mode_selecting = False  # Режим выбора режима игры
         
@@ -177,7 +177,7 @@ class MenuScene(BaseScene):
         self.locked_skin_message = False
         self.locked_skin_message_time = 0
         
-        # 🎬 ДОБАВЛЕНО: Кэш для анимаций артов
+        # Кэш для анимаций артов
         self.art_animations = {}  # Ключ: (имя, скин, размер) -> VideoAnimation
         self.playing_animations = []  # Список активных анимаций для обновления
         
